@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Láor Admin Panel</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #ffccba; padding-bottom: 10px; }
+        .order-item { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
+        input { padding: 8px; width: 80px; margin-right: 10px; }
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 5px; color: white; }
+        .btn-add { background: #28a745; }
+        .btn-del { background: #dc3545; margin-top: 10px; }
+        .section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>รอยืนยันแต้ม (Pending Orders)</h2>
+        <div id="orderList">กำลังโหลดรายการ...</div>
+
+        <div class="section">
+            <h2>ตัดแต้มลูกค้า (Manual Deduct)</h2>
+            <input type="text" id="targetId" placeholder="LINE User ID" style="width: 200px;">
+            <input type="number" id="deductAmount" placeholder="จำนวนแต้ม">
+            <button class="btn-del" onclick="manualUpdate('Deduct')">ตัดแต้ม</button>
+        </div>
+    </div>
+
+    <script>
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec";
+
+        // ดึงรายการออร์เดอร์ที่ค้างอยู่มาโชว์
+        function loadOrders() {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getPendingOrders" })
+            })
+            .then(res => res.json())
+            .then(res => {
+                const list = document.getElementById("orderList");
+                list.innerHTML = "";
+                if (res.data.length === 0) list.innerHTML = "ไม่มีรายการค้างส่ง";
+                res.data.forEach(item => {
+                    const div = document.createElement("div");
+                    div.className = "order-item";
+                    div.innerHTML = `
+                        <p><strong>ออร์เดอร์:</strong> ${item.orderId}</p>
+                        <p><small>ID: ${item.userId}</small></p>
+                        <input type="number" id="pts-${item.row}" placeholder="แต้ม">
+                        <button class="btn-add" onclick="approveOrder('${item.userId}', ${item.row})">อนุมัติแต้ม</button>
+                    `;
+                    list.appendChild(div);
+                });
+            });
+        }
+
+        function approveOrder(userId, row) {
+            const pts = document.getElementById(`pts-${row}`).value;
+            if(!pts) return alert("ระบุแต้มด้วยครับ");
+            
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "updatePoints",
+                    lineUserId: userId,
+                    amount: pts,
+                    type: "Approve",
+                    orderRow: row,
+                    note: "อนุมัติจากออร์เดอร์"
+                })
+            }).then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); });
+        }
+
+        function manualUpdate(type) {
+            const userId = document.getElementById("targetId").value;
+            const amount = document.getElementById("deductAmount").value;
+            if(!userId || !amount) return alert("กรอกข้อมูลให้ครบครับ");
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "updatePoints",
+                    lineUserId: userId,
+                    amount: -Math.abs(amount), // ทำให้เป็นค่าลบเสมอ
+                    type: type,
+                    note: "แอดมินตัดแต้มด้วยตนเอง"
+                })
+            }).then(() => { alert("ดำเนินการสำเร็จ!"); });
+        }
+
+        loadOrders();
+    </script>
+</body>
+</html>
