@@ -6,7 +6,6 @@
     <title>Láor Skincare Member</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
     <style>
-        /* ตกแต่งความสวยงามเบื้องต้น (เปลี่ยนสีได้ตามธีมของแบรนด์) */
         body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 20px; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
         img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
@@ -19,7 +18,7 @@
     <div class="card" id="profileCard" style="display: none;">
         <img id="pictureUrl" src="" alt="Profile Image">
         <h2 id="displayName">กำลังโหลด...</h2>
-        <p>สถานะ: <strong id="level" style="color: #ff9d76;">Member</strong></p>
+        <p>สถานะ: <strong id="level" style="color: #ff9d76;">กำลังโหลด...</strong></p>
         <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
     </div>
 
@@ -32,80 +31,89 @@
     </div>
 
     <script>
-        // -----------------------------------------------------
-        // จุดที่ต้องนำข้อมูลมาใส่ 
-        // -----------------------------------------------------
+        // ใส่ข้อมูลของคุณตรงนี้
         const LIFF_ID = "2009822263-SUKU0laL";
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec"; 
 
-        // เริ่มต้นการทำงานของระบบ LINE
         async function main() {
             await liff.init({ liffId: LIFF_ID });
             if (liff.isLoggedIn()) {
-                getUserProfile(); // ถ้าล็อกอินแล้ว ให้ดึงข้อมูลมาแสดง
+                getUserProfile();
             } else {
-                liff.login(); // ถ้ายังไม่ล็อกอิน ให้เด้งหน้าล็อกอิน LINE
+                liff.login();
             }
         }
 
-        // ดึงข้อมูลโปรไฟล์ LINE ของลูกค้า
         async function getUserProfile() {
             const profile = await liff.getProfile();
-            
-            // เอารูปและชื่อจาก LINE มาแสดงบนหน้าเว็บ
             document.getElementById("pictureUrl").src = profile.pictureUrl;
             document.getElementById("displayName").innerText = profile.displayName;
-            
-            // เปิดให้แสดงผลหน้าการ์ด
             document.getElementById("profileCard").style.display = "block";
             document.getElementById("orderCard").style.display = "block";
 
-            // สั่งให้ระบบส่งข้อมูลไปที่ Apps Script ทันที เพื่อสมัครสมาชิกหรือดึงแต้ม
-            registerUser(profile);
+            // เรียกใช้ฟังก์ชันดึงข้อมูลแต้มจาก Google Sheets
+            fetchUserData(profile);
         }
 
-        // ส่งข้อมูลผู้ใช้ไปหา "พนักงานรับพัสดุ" (Apps Script)
-async function submitOrder() {
-    const orderInput = document.getElementById("orderId");
-    const orderId = orderInput.value;
-    const statusText = document.getElementById("statusMessage");
-
-    if(!orderId) {
-        alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ");
-        return;
-    }
-
-    statusText.innerText = "กำลังส่งข้อมูล...";
-    
-    // ดึงโปรไฟล์ปัจจุบันอีกครั้งเพื่อความแม่นยำ
-    const profile = await liff.getProfile();
-
-    fetch(WEB_APP_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-            action: "submitOrder",
-            lineUserId: profile.userId,
-            orderId: orderId
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if(data.status === "success") {
-            statusText.style.color = "green";
-            statusText.innerText = "ส่งเลขออร์เดอร์สำเร็จ! รอแอดมินตรวจสอบนะคะ";
-            orderInput.value = ""; // ล้างช่องกรอก
-        } else {
-            statusText.style.color = "red";
-            statusText.innerText = "เกิดข้อผิดพลาด: " + data.message;
+        // ฟังก์ชันใหม่: ดึงข้อมูล แต้ม และ เลเวล มาแสดงผล
+        function fetchUserData(profile) {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "registerUser",
+                    lineUserId: profile.userId,
+                    displayName: profile.displayName
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    // อัปเดตแต้มและเลเวลบนหน้าจอ
+                    document.getElementById("points").innerText = data.points;
+                    document.getElementById("level").innerText = data.level;
+                }
+            })
+            .catch(error => console.error("Error fetching user data:", error));
         }
-    })
-    .catch(error => {
-        statusText.style.color = "red";
-        statusText.innerText = "ติดต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่";
-    });
-}
 
-        // สั่งให้โค้ดเริ่มทำงาน
+        async function submitOrder() {
+            const orderInput = document.getElementById("orderId");
+            const orderId = orderInput.value;
+            const statusText = document.getElementById("statusMessage");
+
+            if(!orderId) {
+                alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ");
+                return;
+            }
+
+            statusText.innerText = "กำลังส่งข้อมูล...";
+            const profile = await liff.getProfile();
+
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "submitOrder",
+                    lineUserId: profile.userId,
+                    orderId: orderId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.status === "success") {
+                    statusText.style.color = "green";
+                    statusText.innerText = "ส่งเลขออร์เดอร์สำเร็จ! รอแอดมินตรวจสอบนะคะ";
+                    orderInput.value = "";
+                } else {
+                    statusText.style.color = "red";
+                    statusText.innerText = "เกิดข้อผิดพลาด: " + data.message;
+                }
+            })
+            .catch(error => {
+                statusText.style.color = "red";
+                statusText.innerText = "ติดต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่";
+            });
+        }
+
         main();
     </script>
 </body>
