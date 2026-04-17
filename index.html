@@ -65,32 +65,45 @@
         }
 
         // ส่งข้อมูลผู้ใช้ไปหา "พนักงานรับพัสดุ" (Apps Script)
-        function registerUser(profile) {
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: "registerUser",
-                    lineUserId: profile.userId,
-                    displayName: profile.displayName
-                })
-            }).then(response => response.json())
-              .then(data => console.log("ระบบหลังบ้านตอบกลับ:", data))
-              .catch(error => console.error("เกิดข้อผิดพลาด:", error));
-        }
+async function submitOrder() {
+    const orderInput = document.getElementById("orderId");
+    const orderId = orderInput.value;
+    const statusText = document.getElementById("statusMessage");
 
-        // กดปุ่มส่งเลขคำสั่งซื้อ (เราจะทำระบบนี้แบบเต็มๆ ในรอบถัดไป)
-        function submitOrder() {
-            const orderId = document.getElementById("orderId").value;
-            if(!orderId) {
-                alert("กรุณาระบุหมายเลขคำสั่งซื้อค่ะ");
-                return;
-            }
-            document.getElementById("statusMessage").innerText = "กำลังส่งข้อมูลให้แอดมินตรวจสอบ...";
-            setTimeout(() => {
-                document.getElementById("statusMessage").innerText = "ส่งข้อมูลสำเร็จ! รอแอดมินตรวจสอบนะคะ";
-                document.getElementById("orderId").value = "";
-            }, 1500);
+    if(!orderId) {
+        alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ");
+        return;
+    }
+
+    statusText.innerText = "กำลังส่งข้อมูล...";
+    
+    // ดึงโปรไฟล์ปัจจุบันอีกครั้งเพื่อความแม่นยำ
+    const profile = await liff.getProfile();
+
+    fetch(WEB_APP_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+            action: "submitOrder",
+            lineUserId: profile.userId,
+            orderId: orderId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if(data.status === "success") {
+            statusText.style.color = "green";
+            statusText.innerText = "ส่งเลขออร์เดอร์สำเร็จ! รอแอดมินตรวจสอบนะคะ";
+            orderInput.value = ""; // ล้างช่องกรอก
+        } else {
+            statusText.style.color = "red";
+            statusText.innerText = "เกิดข้อผิดพลาด: " + data.message;
         }
+    })
+    .catch(error => {
+        statusText.style.color = "red";
+        statusText.innerText = "ติดต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่";
+    });
+}
 
         // สั่งให้โค้ดเริ่มทำงาน
         main();
