@@ -11,6 +11,10 @@
         img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
         input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
         button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .history-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
+        .history-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
+        .status-pending { color: #ff9800; font-weight: bold; background: #fff3e0; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
+        .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
     </style>
 </head>
 <body>
@@ -27,11 +31,17 @@
         <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม Láor Skincare</p>
         <input type="text" id="orderId" placeholder="เช่น ORD-12345">
         <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
-        <p id="statusMessage" style="color: green; font-size: 14px; margin-top: 10px;"></p>
+        <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
+    </div>
+
+    <div class="card" id="historyCard" style="display: none;">
+        <h3>ประวัติการแจ้งออร์เดอร์</h3>
+        <ul class="history-list" id="historyList">
+            <li style="text-align: center; color: gray; font-size: 14px;">กำลังโหลดประวัติ...</li>
+        </ul>
     </div>
 
     <script>
-        // ใส่ข้อมูลของคุณตรงนี้
         const LIFF_ID = "2009822263-SUKU0laL";
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec"; 
 
@@ -50,12 +60,12 @@
             document.getElementById("displayName").innerText = profile.displayName;
             document.getElementById("profileCard").style.display = "block";
             document.getElementById("orderCard").style.display = "block";
+            document.getElementById("historyCard").style.display = "block";
 
-            // เรียกใช้ฟังก์ชันดึงข้อมูลแต้มจาก Google Sheets
             fetchUserData(profile);
+            fetchOrderHistory(profile.userId); // สั่งดึงประวัติทันทีที่โหลดโปรไฟล์เสร็จ
         }
 
-        // ฟังก์ชันใหม่: ดึงข้อมูล แต้ม และ เลเวล มาแสดงผล
         function fetchUserData(profile) {
             fetch(WEB_APP_URL, {
                 method: 'POST',
@@ -68,17 +78,48 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    // อัปเดตแต้มและเลเวลบนหน้าจอ
                     document.getElementById("points").innerText = data.points;
                     document.getElementById("level").innerText = data.level;
                 }
+            });
+        }
+
+        // ฟังก์ชันใหม่: ดึงข้อมูลประวัติ
+        function fetchOrderHistory(userId) {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId })
             })
-            .catch(error => console.error("Error fetching user data:", error));
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const list = document.getElementById("historyList");
+                    list.innerHTML = ""; // ล้างข้อความ 'กำลังโหลด...'
+
+                    if (data.data.length === 0) {
+                        list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติการแจ้งออร์เดอร์ค่ะ</li>";
+                        return;
+                    }
+
+                    // วนลูปสร้างรายการประวัติ
+                    data.data.forEach(item => {
+                        let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
+                        let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
+                        
+                        list.innerHTML += `
+                            <li class="history-item">
+                                <span>📦 ${item.orderId}</span>
+                                <span class="${statusClass}">${statusText}</span>
+                            </li>
+                        `;
+                    });
+                }
+            });
         }
 
         async function submitOrder() {
             const orderInput = document.getElementById("orderId");
-            const orderId = orderInput.value;
+            const orderId = orderInput.value.trim(); // ลบช่องว่างหน้าหลังที่อาจเผลอพิมพ์
             const statusText = document.getElementById("statusMessage");
 
             if(!orderId) {
@@ -86,6 +127,7 @@
                 return;
             }
 
+            statusText.style.color = "orange";
             statusText.innerText = "กำลังส่งข้อมูล...";
             const profile = await liff.getProfile();
 
@@ -103,9 +145,11 @@
                     statusText.style.color = "green";
                     statusText.innerText = "ส่งเลขออร์เดอร์สำเร็จ! รอแอดมินตรวจสอบนะคะ";
                     orderInput.value = "";
+                    fetchOrderHistory(profile.userId); // รีเฟรชประวัติทันที ไม่ต้องรอรีเฟรชแอป!
                 } else {
+                    // ตรงนี้จะดักจับกรณีเจอ "เลขซ้ำ" แล้วแสดงแจ้งเตือนสีแดงครับ
                     statusText.style.color = "red";
-                    statusText.innerText = "เกิดข้อผิดพลาด: " + data.message;
+                    statusText.innerText = data.message; 
                 }
             })
             .catch(error => {
