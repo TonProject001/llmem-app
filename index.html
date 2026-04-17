@@ -111,7 +111,7 @@
 
         async function submitOrder() {
             const orderInput = document.getElementById("orderId");
-            const orderId = orderInput.value.trim();
+            const orderId = orderInput.value.trim().toUpperCase();
             const statusText = document.getElementById("statusMessage");
 
             if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ"); return; }
