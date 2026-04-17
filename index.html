@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Láor Skincare Member</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        /* ตกแต่งความสวยงามเบื้องต้น (เปลี่ยนสีได้ตามธีมของแบรนด์) */
+        body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
+        img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
+        input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
+        button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <div class="card" id="profileCard" style="display: none;">
+        <img id="pictureUrl" src="" alt="Profile Image">
+        <h2 id="displayName">กำลังโหลด...</h2>
+        <p>สถานะ: <strong id="level" style="color: #ff9d76;">Member</strong></p>
+        <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
+    </div>
+
+    <div class="card" id="orderCard" style="display: none;">
+        <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
+        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม Láor Skincare</p>
+        <input type="text" id="orderId" placeholder="เช่น ORD-12345">
+        <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
+        <p id="statusMessage" style="color: green; font-size: 14px; margin-top: 10px;"></p>
+    </div>
+
+    <script>
+        // -----------------------------------------------------
+        // จุดที่ต้องนำข้อมูลมาใส่ 
+        // -----------------------------------------------------
+        const LIFF_ID = "2009822263-SUKU0laL";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec"; 
+
+        // เริ่มต้นการทำงานของระบบ LINE
+        async function main() {
+            await liff.init({ liffId: LIFF_ID });
+            if (liff.isLoggedIn()) {
+                getUserProfile(); // ถ้าล็อกอินแล้ว ให้ดึงข้อมูลมาแสดง
+            } else {
+                liff.login(); // ถ้ายังไม่ล็อกอิน ให้เด้งหน้าล็อกอิน LINE
+            }
+        }
+
+        // ดึงข้อมูลโปรไฟล์ LINE ของลูกค้า
+        async function getUserProfile() {
+            const profile = await liff.getProfile();
+            
+            // เอารูปและชื่อจาก LINE มาแสดงบนหน้าเว็บ
+            document.getElementById("pictureUrl").src = profile.pictureUrl;
+            document.getElementById("displayName").innerText = profile.displayName;
+            
+            // เปิดให้แสดงผลหน้าการ์ด
+            document.getElementById("profileCard").style.display = "block";
+            document.getElementById("orderCard").style.display = "block";
+
+            // สั่งให้ระบบส่งข้อมูลไปที่ Apps Script ทันที เพื่อสมัครสมาชิกหรือดึงแต้ม
+            registerUser(profile);
+        }
+
+        // ส่งข้อมูลผู้ใช้ไปหา "พนักงานรับพัสดุ" (Apps Script)
+        function registerUser(profile) {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: "registerUser",
+                    lineUserId: profile.userId,
+                    displayName: profile.displayName
+                })
+            }).then(response => response.json())
+              .then(data => console.log("ระบบหลังบ้านตอบกลับ:", data))
+              .catch(error => console.error("เกิดข้อผิดพลาด:", error));
+        }
+
+        // กดปุ่มส่งเลขคำสั่งซื้อ (เราจะทำระบบนี้แบบเต็มๆ ในรอบถัดไป)
+        function submitOrder() {
+            const orderId = document.getElementById("orderId").value;
+            if(!orderId) {
+                alert("กรุณาระบุหมายเลขคำสั่งซื้อค่ะ");
+                return;
+            }
+            document.getElementById("statusMessage").innerText = "กำลังส่งข้อมูลให้แอดมินตรวจสอบ...";
+            setTimeout(() => {
+                document.getElementById("statusMessage").innerText = "ส่งข้อมูลสำเร็จ! รอแอดมินตรวจสอบนะคะ";
+                document.getElementById("orderId").value = "";
+            }, 1500);
+        }
+
+        // สั่งให้โค้ดเริ่มทำงาน
+        main();
+    </script>
+</body>
+</html>
