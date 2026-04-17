@@ -15,6 +15,10 @@
         .history-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
         .status-pending { color: #ff9800; font-weight: bold; background: #fff3e0; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
+        
+        /* สไตล์ใหม่สำหรับปุ่มกดเปิด-ปิดประวัติ */
+        .toggle-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #333; margin: 0; }
+        .toggle-icon { font-size: 12px; transition: transform 0.3s; }
     </style>
 </head>
 <body>
@@ -28,17 +32,22 @@
 
     <div class="card" id="orderCard" style="display: none;">
         <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
-        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม Láor Skincare</p>
+        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
         <input type="text" id="orderId" placeholder="เช่น ORD-12345">
         <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
         <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
     </div>
 
     <div class="card" id="historyCard" style="display: none;">
-        <h3>ประวัติการแจ้งออร์เดอร์</h3>
-        <ul class="history-list" id="historyList">
-            <li style="text-align: center; color: gray; font-size: 14px;">กำลังโหลดประวัติ...</li>
-        </ul>
+        <h3 class="toggle-header" onclick="toggleHistory()">
+            <span>ประวัติการแจ้งออร์เดอร์</span>
+            <span class="toggle-icon" id="toggleIcon">▼</span>
+        </h3>
+        <div id="historyContent" style="display: none;">
+            <ul class="history-list" id="historyList">
+                <li style="text-align: center; color: gray; font-size: 14px;">กำลังโหลดประวัติ...</li>
+            </ul>
+        </div>
     </div>
 
     <script>
@@ -47,11 +56,8 @@
 
         async function main() {
             await liff.init({ liffId: LIFF_ID });
-            if (liff.isLoggedIn()) {
-                getUserProfile();
-            } else {
-                liff.login();
-            }
+            if (liff.isLoggedIn()) { getUserProfile(); } 
+            else { liff.login(); }
         }
 
         async function getUserProfile() {
@@ -63,19 +69,15 @@
             document.getElementById("historyCard").style.display = "block";
 
             fetchUserData(profile);
-            fetchOrderHistory(profile.userId); // สั่งดึงประวัติทันทีที่โหลดโปรไฟล์เสร็จ
+            fetchOrderHistory(profile.userId);
         }
 
         function fetchUserData(profile) {
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({
-                    action: "registerUser",
-                    lineUserId: profile.userId,
-                    displayName: profile.displayName
-                })
+                body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId, displayName: profile.displayName })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
                     document.getElementById("points").innerText = data.points;
@@ -84,34 +86,24 @@
             });
         }
 
-        // ฟังก์ชันใหม่: ดึงข้อมูลประวัติ
         function fetchOrderHistory(userId) {
             fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
                     const list = document.getElementById("historyList");
-                    list.innerHTML = ""; // ล้างข้อความ 'กำลังโหลด...'
-
+                    list.innerHTML = ""; 
                     if (data.data.length === 0) {
-                        list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติการแจ้งออร์เดอร์ค่ะ</li>";
+                        list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>";
                         return;
                     }
-
-                    // วนลูปสร้างรายการประวัติ
                     data.data.forEach(item => {
                         let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
                         let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
-                        
-                        list.innerHTML += `
-                            <li class="history-item">
-                                <span>📦 ${item.orderId}</span>
-                                <span class="${statusClass}">${statusText}</span>
-                            </li>
-                        `;
+                        list.innerHTML += `<li class="history-item"><span>📦 ${item.orderId}</span><span class="${statusClass}">${statusText}</span></li>`;
                     });
                 }
             });
@@ -119,13 +111,10 @@
 
         async function submitOrder() {
             const orderInput = document.getElementById("orderId");
-            const orderId = orderInput.value.trim(); // ลบช่องว่างหน้าหลังที่อาจเผลอพิมพ์
+            const orderId = orderInput.value.trim();
             const statusText = document.getElementById("statusMessage");
 
-            if(!orderId) {
-                alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ");
-                return;
-            }
+            if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ"); return; }
 
             statusText.style.color = "orange";
             statusText.innerText = "กำลังส่งข้อมูล...";
@@ -133,29 +122,40 @@
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({
-                    action: "submitOrder",
-                    lineUserId: profile.userId,
-                    orderId: orderId
-                })
+                body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId })
             })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
                     statusText.style.color = "green";
-                    statusText.innerText = "ส่งเลขออร์เดอร์สำเร็จ! รอแอดมินตรวจสอบนะคะ";
+                    statusText.innerText = "ส่งสำเร็จ! รอตรวจสอบนะคะ";
                     orderInput.value = "";
-                    fetchOrderHistory(profile.userId); // รีเฟรชประวัติทันที ไม่ต้องรอรีเฟรชแอป!
+                    fetchOrderHistory(profile.userId);
+                    
+                    // สั่งให้เปิดการ์ดประวัติอัตโนมัติเมื่อส่งออร์เดอร์สำเร็จ
+                    document.getElementById("historyContent").style.display = "block";
+                    document.getElementById("toggleIcon").innerText = "▲";
                 } else {
-                    // ตรงนี้จะดักจับกรณีเจอ "เลขซ้ำ" แล้วแสดงแจ้งเตือนสีแดงครับ
                     statusText.style.color = "red";
                     statusText.innerText = data.message; 
                 }
-            })
-            .catch(error => {
+            }).catch(() => {
                 statusText.style.color = "red";
-                statusText.innerText = "ติดต่อเซิร์ฟเวอร์ไม่ได้ กรุณาลองใหม่";
+                statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่";
             });
+        }
+
+        // ฟังก์ชันใหม่: เปิด-ปิดการแสดงผลประวัติ
+        function toggleHistory() {
+            const content = document.getElementById("historyContent");
+            const icon = document.getElementById("toggleIcon");
+            if (content.style.display === "none") {
+                content.style.display = "block";
+                icon.innerText = "▲";
+            } else {
+                content.style.display = "none";
+                icon.innerText = "▼";
+            }
         }
 
         main();
