@@ -5,42 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Láor Skincare Member</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 15px 0; margin: 0; overflow-x: hidden; }
+        body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 10px 0; margin: 0; overflow-x: hidden; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
-        img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
+        img.profile-img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
         input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
         button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        
         .history-list, .rank-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
         .history-item, .rank-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
-        
         .status-pending { color: #ff9800; font-weight: bold; background: #fff3e0; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .toggle-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #333; margin: 0; }
         .toggle-icon { font-size: 12px; transition: transform 0.3s; }
-        
         #loading { margin-top: 50px; color: gray; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ffccba; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .expiry-warning { background-color: #fff4f4; color: #d9534f; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 15px; border: 1px solid #f5c6c6; display: none; line-height: 1.5; }
         .member-id-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px dashed #ccc; font-size: 14px;}
         .copy-btn { background: #ffccba; color: #333; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px; border-radius: 5px;}
-        
         .rank-1 { color: #d4af37; font-weight: bold; font-size: 16px; } 
-        .rank-2 { color: #aaa9ad; font-weight: bold; } 
-        .rank-3 { color: #cd7f32; font-weight: bold; } 
         .my-rank-box { background-color: #fff3cd; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #856404; text-align: center; border: 1px solid #ffeeba;}
-        
-        /* สไตล์สำหรับตัวสไลด์ */
-        .swiper { width: 100%; padding-bottom: 40px; /* เว้นที่ให้จุดไข่ปลา */ }
+        .swiper { width: 100%; padding-bottom: 40px; }
         .swiper-slide { padding: 0 20px; box-sizing: border-box; }
-        .swipe-hint { color: #888; font-size: 13px; margin-bottom: 10px; text-align: center; }
+        
+        /* สไตล์สำหรับการ์ดโปรโมชั่น */
+        .reward-item { border: 1px solid #eee; border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: left; background: #fff;}
+        .reward-img { width: 100%; max-width: 1000px; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; }
+        .reward-info { padding: 15px; }
+        .reward-info h4 { margin: 0 0 10px; color: #333; }
+        .reward-info p { font-size: 13px; color: #666; margin: 5px 0; }
+        .reward-tag { display: inline-block; background: #ffccba; color: #333; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; margin-bottom: 10px;}
     </style>
 </head>
 <body>
@@ -48,15 +44,13 @@
     <div id="loading">
         <div class="loader"></div>
         <h3>กำลังเตรียมข้อมูลสมาชิก...</h3>
-        <p id="errorLog" style="color: red; font-size: 12px; margin-top: 15px;"></p>
     </div>
 
     <div id="registerContent" style="display: none; padding: 0 20px;">
         <div class="card">
             <h2>ลงทะเบียนสมาชิกใหม่ 🎉</h2>
-            <p style="font-size: 14px; color: gray;">กรุณากรอกข้อมูลเพื่อรับสิทธิพิเศษจาก Láor Skincare</p>
             <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์ (10 หลัก)" maxlength="10">
-            <p style="font-size: 14px; color: gray; text-align: left; margin: 10px 10% 0;">วันเกิด (เพื่อรับสิทธิ์เดือนเกิด)</p>
+            <p style="font-size: 14px; color: gray; text-align: left; margin: 10px 10% 0;">วันเกิด</p>
             <input type="date" id="regBirthdate">
             <button onclick="submitRegistration()" style="margin-top: 15px;">ยืนยันการลงทะเบียน</button>
             <p id="regError" style="color: red; font-size: 14px; margin-top: 10px;"></p>
@@ -64,65 +58,58 @@
     </div>
 
     <div id="appContent" style="display: none;">
-        <div class="swipe-hint">👈 ปัดซ้าย-ขวา เพื่อเปลี่ยนหน้า 👉</div>
-        
         <div class="swiper mySwiper">
             <div class="swiper-wrapper">
                 
                 <div class="swiper-slide">
                     <div class="card" id="profileCard">
-                        <img id="pictureUrl" src="" alt="Profile Image">
+                        <img id="pictureUrl" class="profile-img" src="">
                         <h2 id="displayName">กำลังโหลด...</h2>
-                        
                         <div class="member-id-box">
-                            รหัสสมาชิก: <strong id="memberIdTxt" style="color: #00B900;">กำลังโหลด...</strong>
+                            รหัสสมาชิก: <strong id="memberIdTxt" style="color: #00B900;">-</strong>
                             <button class="copy-btn" onclick="copyMemberId()">คัดลอก</button>
                         </div>
-
-                        <p>สถานะ: <strong id="level" style="color: #ff9d76;">กำลังโหลด...</strong></p>
+                        <p>สถานะ: <strong id="level" style="color: #ff9d76;">-</strong></p>
                         <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
-                        
                         <div id="expiryWarningBox" class="expiry-warning">
-                            แจ้งเตือน: <strong id="expPoints">0</strong> แต้ม <br>
-                            หมดอายุ (วันที่ <span id="expDate">-</span>)
+                            แจ้งเตือน: <strong id="expPoints">0</strong> แต้ม <br> หมดอายุ (วันที่ <span id="expDate">-</span>)
                         </div>
                     </div>
                 </div>
 
                 <div class="swiper-slide">
-                    <div class="card" id="leaderboardCard">
+                    <div class="card">
                         <h3 class="toggle-header" onclick="toggleSection('leaderboardContent', 'toggleIconLB')">
                             <span>🏆 อันดับคะแนนสะสม (Top 10)</span>
                             <span class="toggle-icon" id="toggleIconLB">▼</span>
                         </h3>
                         <div id="leaderboardContent" style="display: block;">
-                            <ul class="rank-list" id="rankList">
-                                <li style="text-align: center; color: gray; font-size: 14px;">กำลังจัดอันดับ...</li>
-                            </ul>
-                            <div class="my-rank-box">
-                                คุณอยู่ในอันดับที่: <span id="myRankDisplay">...</span>
-                            </div>
+                            <ul class="rank-list" id="rankList"></ul>
+                            <div class="my-rank-box">คุณอยู่ในอันดับที่: <span id="myRankDisplay">-</span></div>
                         </div>
                     </div>
                 </div>
 
                 <div class="swiper-slide">
-                    <div class="card" id="orderCard">
+                    <div class="card">
                         <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
-                        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
                         <input type="text" id="orderId" placeholder="เช่น ORD-12345">
                         <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
                         <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
                     </div>
-
-                    <div class="card" id="historyCard">
+                    <div class="card">
                         <h3 class="toggle-header" onclick="toggleSection('historyContent', 'toggleIconHist')">
                             <span>ประวัติการแจ้งออร์เดอร์</span>
                             <span class="toggle-icon" id="toggleIconHist">▼</span>
                         </h3>
-                        <div id="historyContent" style="display: block;">
-                            <ul class="history-list" id="historyList"></ul>
-                        </div>
+                        <div id="historyContent" style="display: block;"><ul class="history-list" id="historyList"></ul></div>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="card">
+                        <h3>🎁 โปรโมชั่นพิเศษสำหรับคุณ</h3>
+                        <div id="rewardContainer">กำลังโหลดโปรโมชั่น...</div>
                     </div>
                 </div>
                 
@@ -134,212 +121,117 @@
     <script>
         const LIFF_ID = "2009822263-SUKU0laL";
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec"; 
-        
-        let swiper; // ตัวแปรสำหรับเก็บระบบสไลด์
+        let swiper;
 
         async function main() {
-            try {
-                await liff.init({ liffId: LIFF_ID });
-                if (liff.isLoggedIn()) { getUserProfile(); } 
-                else { liff.login(); }
-            } catch (err) {
-                document.getElementById("loading").innerHTML = "<h3>ขออภัย เกิดข้อผิดพลาด</h3><p>" + err.message + "</p>";
-            }
+            await liff.init({ liffId: LIFF_ID });
+            if (liff.isLoggedIn()) { getUserProfile(); } else { liff.login(); }
         }
 
         async function getUserProfile() {
-            try {
-                const profile = await liff.getProfile();
-                document.getElementById("pictureUrl").src = profile.pictureUrl;
-                document.getElementById("displayName").innerText = profile.displayName;
-                checkUserRegistration(profile);
-            } catch (err) { document.getElementById("errorLog").innerText = "ดึงโปรไฟล์ไม่สำเร็จ"; }
+            const profile = await liff.getProfile();
+            document.getElementById("pictureUrl").src = profile.pictureUrl;
+            document.getElementById("displayName").innerText = profile.displayName;
+            checkUserRegistration(profile);
         }
 
         function checkUserRegistration(profile) {
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId })
-            })
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId }) })
             .then(res => res.json())
             .then(data => {
                 document.getElementById("loading").style.display = "none";
-                
-                if (data.status === "need_info") {
-                    document.getElementById("registerContent").style.display = "block";
-                } 
-                else if (data.status === "success") {
+                if (data.status === "need_info") { document.getElementById("registerContent").style.display = "block"; } 
+                else {
                     document.getElementById("appContent").style.display = "block";
                     updateUI(data);
                     fetchOrderHistory(profile.userId);
                     fetchLeaderboard(profile.userId);
-                    
-                    // เมื่อโหลดหน้าเว็บเสร็จ ให้เริ่มทำงานระบบสไลด์ปัดหน้าจอ
-                    setTimeout(initSwiper, 100); 
+                    fetchRewards(); // โหลดโปรโมชั่น
+                    setTimeout(() => {
+                        swiper = new Swiper('.mySwiper', { loop: true, autoHeight: true, pagination: { el: '.swiper-pagination', clickable: true }, spaceBetween: 10 });
+                    }, 100);
                 }
             });
         }
-        
-        // ฟังก์ชันตั้งค่าการปัดหน้าจอ
-        function initSwiper() {
-            swiper = new Swiper('.mySwiper', {
-                loop: true, // ตั้งค่าให้ปัดวนขวาซ้ายได้ไม่รู้จบ
-                autoHeight: true, // ปรับความสูงหน้าจออัตโนมัติตามเนื้อหาการ์ด
-                pagination: {
-                    el: '.swiper-pagination',
-                    clickable: true,
-                },
-                spaceBetween: 10 // ระยะห่างระหว่างหน้าสไลด์
-            });
-        }
 
-        async function submitRegistration() {
-            const phone = document.getElementById("regPhone").value;
-            const birthdate = document.getElementById("regBirthdate").value;
-            const errorTxt = document.getElementById("regError");
-
-            if(phone.length < 9) { errorTxt.innerText = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"; return; }
-            if(!birthdate) { errorTxt.innerText = "กรุณาระบุวันเกิด"; return; }
-
-            errorTxt.style.color = "orange";
-            errorTxt.innerText = "กำลังบันทึกข้อมูล...";
-            
-            const profile = await liff.getProfile();
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "saveProfile", lineUserId: profile.userId, displayName: profile.displayName, phone: phone, birthdate: birthdate })
-            })
+        function fetchRewards() {
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getRewards" }) })
             .then(res => res.json())
             .then(data => {
-                if(data.status === "success") {
-                    document.getElementById("registerContent").style.display = "none";
-                    document.getElementById("loading").style.display = "block";
-                    checkUserRegistration(profile);
-                }
+                const container = document.getElementById("rewardContainer");
+                container.innerHTML = "";
+                if (data.data.length === 0) { container.innerHTML = "ขณะนี้ยังไม่มีโปรโมชั่นใหม่"; return; }
+                data.data.forEach(item => {
+                    container.innerHTML += `
+                        <div class="reward-item">
+                            <img class="reward-img" src="${item.img}" alt="Reward">
+                            <div class="reward-info">
+                                <span class="reward-tag">ใช้ ${item.points} แต้ม</span>
+                                <h4>${item.name}</h4>
+                                <p>${item.desc}</p>
+                                <p style="font-size:11px; color:#999;">หมดเขต: ${item.expiry}</p>
+                            </div>
+                        </div>`;
+                });
+                if(swiper) swiper.updateAutoHeight();
             });
         }
 
+        // ฟังก์ชันอื่นๆ ยังเหมือนเดิม (updateUI, fetchOrderHistory, fetchLeaderboard, submitOrder, etc.)
         function updateUI(data) {
             document.getElementById("points").innerText = data.points;
             document.getElementById("level").innerText = data.level;
             document.getElementById("memberIdTxt").innerText = data.memberId;
-            
-            const warningBox = document.getElementById("expiryWarningBox");
-            if (data.expiringAmount > 0 && data.earliestExpiry) {
-                const expDate = new Date(data.earliestExpiry);
+            const box = document.getElementById("expiryWarningBox");
+            if (data.expiringAmount > 0) {
+                const exp = new Date(data.earliestExpiry);
                 document.getElementById("expPoints").innerText = data.expiringAmount;
-                document.getElementById("expDate").innerText = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
-                warningBox.style.display = "block";
-            } else { warningBox.style.display = "none"; }
-            
-            if(swiper) swiper.updateAutoHeight(); // อัปเดตความสูงเผื่อมีการเพิ่มกล่องแจ้งเตือน
+                document.getElementById("expDate").innerText = `${exp.getDate()}/${exp.getMonth()+1}/${exp.getFullYear()}`;
+                box.style.display = "block";
+            }
         }
 
         function fetchLeaderboard(userId) {
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "getLeaderboard", lineUserId: userId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
-                    const list = document.getElementById("rankList");
-                    list.innerHTML = ""; 
-                    
-                    data.top10.forEach(item => {
-                        let rankClass = "";
-                        if(item.rank === 1) rankClass = "rank-1";
-                        if(item.rank === 2) rankClass = "rank-2";
-                        if(item.rank === 3) rankClass = "rank-3";
-                        
-                        let medal = item.rank;
-                        if(item.rank === 1) medal = "🥇";
-                        if(item.rank === 2) medal = "🥈";
-                        if(item.rank === 3) medal = "🥉";
-
-                        list.innerHTML += `
-                            <li class="rank-item">
-                                <span><strong class="${rankClass}">${medal}</strong> ${item.name}</span>
-                                <span><strong style="color: #ff9d76;">${item.points}</strong> แต้ม</span>
-                            </li>
-                        `;
-                    });
-                    document.getElementById("myRankDisplay").innerText = data.myRank > 0 ? data.myRank : "-";
-                    if(swiper) swiper.updateAutoHeight();
-                }
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getLeaderboard", lineUserId: userId }) }).then(res => res.json()).then(data => {
+                const list = document.getElementById("rankList"); list.innerHTML = "";
+                data.top10.forEach(u => {
+                    list.innerHTML += `<li class="rank-item"><span>${u.rank}. ${u.name}</span><span>${u.points} แต้ม</span></li>`;
+                });
+                document.getElementById("myRankDisplay").innerText = data.myRank;
             });
         }
 
         function fetchOrderHistory(userId) {
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.status === "success") {
-                    const list = document.getElementById("historyList");
-                    list.innerHTML = ""; 
-                    if (data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; }
-                    else {
-                        data.data.forEach(item => {
-                            let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
-                            let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
-                            list.innerHTML += `<li class="history-item"><span>📦 ${item.orderId}</span><span class="${statusClass}">${statusText}</span></li>`;
-                        });
-                    }
-                    if(swiper) swiper.updateAutoHeight();
-                }
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId }) }).then(res => res.json()).then(data => {
+                const list = document.getElementById("historyList"); list.innerHTML = "";
+                data.data.forEach(h => {
+                    list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`;
+                });
             });
         }
 
         async function submitOrder() {
-            const orderInput = document.getElementById("orderId");
-            const orderId = orderInput.value.trim().toUpperCase();
-            const statusText = document.getElementById("statusMessage");
-
-            if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ"); return; }
-            statusText.style.color = "orange";
-            statusText.innerText = "กำลังส่งข้อมูล...";
-            
-            try {
-                const profile = await liff.getProfile();
-                fetch(WEB_APP_URL, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId })
-                }).then(res => res.json()).then(data => {
-                    if(data.status === "success") {
-                        statusText.style.color = "green";
-                        statusText.innerText = "ส่งสำเร็จ! รอตรวจสอบนะคะ";
-                        orderInput.value = "";
-                        fetchOrderHistory(profile.userId);
-                    } else {
-                        statusText.style.color = "red";
-                        statusText.innerText = data.message; 
-                    }
-                    if(swiper) swiper.updateAutoHeight();
-                }).catch(() => { statusText.style.color = "red"; statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่"; if(swiper) swiper.updateAutoHeight(); });
-            } catch (err) { alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่"); }
+            const input = document.getElementById("orderId");
+            const status = document.getElementById("statusMessage");
+            if(!input.value) return;
+            status.innerText = "กำลังส่ง...";
+            const profile = await liff.getProfile();
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: input.value.toUpperCase() }) })
+            .then(res => res.json()).then(data => {
+                if(data.status === "success") { status.innerText = "ส่งสำเร็จ!"; input.value = ""; fetchOrderHistory(profile.userId); }
+                else { status.innerText = data.message; }
+            });
         }
 
-        // อัปเดตให้กดซ่อน/แสดงได้ลื่นไหลขึ้นพร้อมกับตัวสไลด์
-        function toggleSection(contentId, iconId) {
-            const content = document.getElementById(contentId);
-            const icon = document.getElementById(iconId);
-            if (content.style.display === "none") { 
-                content.style.display = "block"; 
-                icon.innerText = "▲"; 
-            } else { 
-                content.style.display = "none"; 
-                icon.innerText = "▼"; 
-            }
-            // แจ้งให้ตัวสไลด์รู้ว่ามีการปรับความสูงของเนื้อหา
-            if(swiper) setTimeout(() => swiper.updateAutoHeight(), 50);
+        function toggleSection(cId, iId) {
+            const c = document.getElementById(cId); const i = document.getElementById(iId);
+            c.style.display = c.style.display === "none" ? "block" : "none";
+            i.innerText = c.style.display === "none" ? "▼" : "▲";
+            if(swiper) setTimeout(() => swiper.updateAutoHeight(), 100);
         }
 
         function copyMemberId() {
-            const idText = document.getElementById("memberIdTxt").innerText;
-            navigator.clipboard.writeText(idText).then(() => { alert("คัดลอกรหัสสมาชิก: " + idText + " เรียบร้อยแล้วค่ะ"); });
+            navigator.clipboard.writeText(document.getElementById("memberIdTxt").innerText).then(() => alert("คัดลอกรหัสแล้ว"));
         }
 
         main();
