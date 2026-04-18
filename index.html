@@ -5,41 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Láor Skincare Member</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
-    
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 10px 0; margin: 0; overflow-x: hidden; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
         img.profile-img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
         input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
         button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        
         .history-list, .rank-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
         .history-item, .rank-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
-        
         .status-pending { color: #ff9800; font-weight: bold; background: #fff3e0; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .toggle-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #333; margin: 0; }
         .toggle-icon { font-size: 12px; transition: transform 0.3s; }
-        
         #loading { margin-top: 50px; color: gray; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ffccba; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
         .expiry-warning { background-color: #fff4f4; color: #d9534f; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 15px; border: 1px solid #f5c6c6; display: none; line-height: 1.5; }
         .member-id-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px dashed #ccc; font-size: 14px;}
         .copy-btn { background: #ffccba; color: #333; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px; border-radius: 5px;}
-        
         .rank-1 { color: #d4af37; font-weight: bold; font-size: 16px; } 
         .my-rank-box { background-color: #fff3cd; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #856404; text-align: center; border: 1px solid #ffeeba;}
-        
-        /* สไตล์สำหรับตัวสไลด์ */
         .swiper { width: 100%; padding-bottom: 40px; }
         .swiper-slide { padding: 0 20px; box-sizing: border-box; }
-        
-        /* สไตล์สำหรับการ์ดโปรโมชั่น */
         .reward-item { border: 1px solid #eee; border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: left; background: #fff;}
         .reward-img { width: 100%; max-width: 1000px; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; }
         .reward-info { padding: 15px; }
@@ -59,7 +48,6 @@
     <div id="registerContent" style="display: none; padding: 0 20px;">
         <div class="card">
             <h2>ลงทะเบียนสมาชิกใหม่ 🎉</h2>
-            <p style="font-size: 14px; color: gray;">กรุณากรอกข้อมูลเพื่อรับสิทธิพิเศษจาก Láor Skincare</p>
             <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์ (10 หลัก)" maxlength="10">
             <p style="font-size: 14px; color: gray; text-align: left; margin: 10px 10% 0;">วันเกิด</p>
             <input type="date" id="regBirthdate">
@@ -104,7 +92,6 @@
                 <div class="swiper-slide">
                     <div class="card">
                         <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
-                        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
                         <input type="text" id="orderId" placeholder="เช่น ORD-12345">
                         <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
                         <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
@@ -138,11 +125,8 @@
         async function main() {
             try {
                 await liff.init({ liffId: LIFF_ID });
-                if (liff.isLoggedIn()) { getUserProfile(); } 
-                else { liff.login(); }
-            } catch (err) {
-                document.getElementById("loading").innerHTML = "<h3>ขออภัย เกิดข้อผิดพลาด</h3><p>" + err.message + "</p>";
-            }
+                if (liff.isLoggedIn()) { getUserProfile(); } else { liff.login(); }
+            } catch (err) { document.getElementById("loading").innerHTML = "<h3>ขออภัย เกิดข้อผิดพลาด</h3><p>" + err.message + "</p>"; }
         }
 
         async function getUserProfile() {
@@ -155,7 +139,8 @@
         }
 
         function checkUserRegistration(profile) {
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId }) })
+            // เพิ่มการส่ง pictureUrl ไปหลังบ้าน
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId, pictureUrl: profile.pictureUrl }) })
             .then(res => res.json())
             .then(data => {
                 document.getElementById("loading").style.display = "none";
@@ -166,53 +151,20 @@
                     fetchOrderHistory(profile.userId);
                     fetchLeaderboard(profile.userId);
                     fetchRewards(); 
-                    
-                    // หน่วงเวลาเล็กน้อยเพื่อให้หน้าจอสร้างเสร็จก่อนเปิดระบบสไลด์
-                    setTimeout(() => {
-                        swiper = new Swiper('.mySwiper', { 
-                            loop: true, 
-                            autoHeight: true, 
-                            pagination: { el: '.swiper-pagination', clickable: true }, 
-                            spaceBetween: 10 
-                        });
-                    }, 100);
+                    setTimeout(() => { swiper = new Swiper('.mySwiper', { loop: true, autoHeight: true, pagination: { el: '.swiper-pagination', clickable: true }, spaceBetween: 10 }); }, 100);
                 }
             });
         }
 
-        // ฟังก์ชันดึงโปรโมชั่นและทำลิงก์กดรูปภาพ
         function fetchRewards() {
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getRewards" }) })
-            .then(res => res.json())
-            .then(data => {
-                if(data.promoTitle) {
-                    document.getElementById("dynamicPromoHeader").innerText = data.promoTitle;
-                }
-
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getRewards" }) }).then(res => res.json()).then(data => {
+                if(data.promoTitle) document.getElementById("dynamicPromoHeader").innerText = data.promoTitle;
                 const container = document.getElementById("rewardContainer");
                 container.innerHTML = "";
-                
-                if (!data.data || data.data.length === 0) { 
-                    container.innerHTML = "<p style='color:gray;font-size:14px;margin-top:15px;'>ขณะนี้ยังไม่มีโปรโมชั่นใหม่ค่ะ</p>"; 
-                    return; 
-                }
-                
+                if (!data.data || data.data.length === 0) { container.innerHTML = "<p style='color:gray;font-size:14px;margin-top:15px;'>ขณะนี้ยังไม่มีโปรโมชั่นใหม่ค่ะ</p>"; return; }
                 data.data.forEach(item => {
-                    // ถ้ามีลิงก์ จะครอบรูปภาพด้วยแท็ก <a> เพื่อให้กดไปหน้าเว็บได้
-                    const imageTag = item.link ? 
-                        `<a href="${item.link}" target="_blank"><img class="reward-img" src="${item.img}" alt="Reward" style="cursor: pointer;"></a>` : 
-                        `<img class="reward-img" src="${item.img}" alt="Reward">`;
-
-                    container.innerHTML += `
-                        <div class="reward-item">
-                            ${imageTag}
-                            <div class="reward-info">
-                                <span class="reward-tag">ใช้ ${item.points} แต้ม</span>
-                                <h4>${item.name}</h4>
-                                <p>${item.desc}</p>
-                                <p style="font-size:11px; color:#999; margin-top:8px;">หมดเขต: ${item.expiry}</p>
-                            </div>
-                        </div>`;
+                    const imageTag = item.link ? `<a href="${item.link}" target="_blank"><img class="reward-img" src="${item.img}" alt="Reward" style="cursor: pointer;"></a>` : `<img class="reward-img" src="${item.img}" alt="Reward">`;
+                    container.innerHTML += `<div class="reward-item">${imageTag}<div class="reward-info"><span class="reward-tag">ใช้ ${item.points} แต้ม</span><h4>${item.name}</h4><p>${item.desc}</p><p style="font-size:11px; color:#999; margin-top:8px;">หมดเขต: ${item.expiry}</p></div></div>`;
                 });
                 if(swiper) setTimeout(() => swiper.updateAutoHeight(), 200);
             });
@@ -222,20 +174,13 @@
             const phone = document.getElementById("regPhone").value;
             const birthdate = document.getElementById("regBirthdate").value;
             const errorTxt = document.getElementById("regError");
-
             if(phone.length < 9) { errorTxt.innerText = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"; return; }
             if(!birthdate) { errorTxt.innerText = "กรุณาระบุวันเกิด"; return; }
-
-            errorTxt.style.color = "orange";
-            errorTxt.innerText = "กำลังบันทึกข้อมูล...";
-            
+            errorTxt.style.color = "orange"; errorTxt.innerText = "กำลังบันทึกข้อมูล...";
             const profile = await liff.getProfile();
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "saveProfile", lineUserId: profile.userId, displayName: profile.displayName, phone: phone, birthdate: birthdate })
-            })
-            .then(res => res.json())
-            .then(data => {
+            // ส่ง pictureUrl ไปด้วยเวลาลงทะเบียนใหม่
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "saveProfile", lineUserId: profile.userId, displayName: profile.displayName, phone: phone, birthdate: birthdate, pictureUrl: profile.pictureUrl }) })
+            .then(res => res.json()).then(data => {
                 if(data.status === "success") {
                     document.getElementById("registerContent").style.display = "none";
                     document.getElementById("loading").style.display = "block";
@@ -248,41 +193,28 @@
             document.getElementById("points").innerText = data.points;
             document.getElementById("level").innerText = data.level;
             document.getElementById("memberIdTxt").innerText = data.memberId;
-            
             const box = document.getElementById("expiryWarningBox");
             if (data.expiringAmount > 0 && data.earliestExpiry) {
                 const exp = new Date(data.earliestExpiry);
                 document.getElementById("expPoints").innerText = data.expiringAmount;
                 document.getElementById("expDate").innerText = `${String(exp.getDate()).padStart(2, '0')}/${String(exp.getMonth()+1).padStart(2, '0')}/${exp.getFullYear()}`;
                 box.style.display = "block";
-            } else {
-                box.style.display = "none";
-            }
+            } else { box.style.display = "none"; }
         }
 
         function fetchLeaderboard(userId) {
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getLeaderboard", lineUserId: userId }) })
-            .then(res => res.json())
-            .then(data => {
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getLeaderboard", lineUserId: userId }) }).then(res => res.json()).then(data => {
                 const list = document.getElementById("rankList"); list.innerHTML = "";
-                data.top10.forEach(u => {
-                    list.innerHTML += `<li class="rank-item"><span>${u.rank}. ${u.name}</span><span>${u.points} แต้ม</span></li>`;
-                });
+                data.top10.forEach(u => { list.innerHTML += `<li class="rank-item"><span>${u.rank}. ${u.name}</span><span>${u.points} แต้ม</span></li>`; });
                 document.getElementById("myRankDisplay").innerText = data.myRank > 0 ? data.myRank : "-";
             });
         }
 
         function fetchOrderHistory(userId) {
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId }) })
-            .then(res => res.json())
-            .then(data => {
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId }) }).then(res => res.json()).then(data => {
                 const list = document.getElementById("historyList"); list.innerHTML = "";
                 if(data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; }
-                else {
-                    data.data.forEach(h => {
-                        list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`;
-                    });
-                }
+                else { data.data.forEach(h => { list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`; }); }
             });
         }
 
@@ -291,8 +223,7 @@
             const status = document.getElementById("statusMessage");
             const orderId = input.value.trim().toUpperCase();
             if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อ"); return; }
-            status.style.color = "orange";
-            status.innerText = "กำลังส่ง...";
+            status.style.color = "orange"; status.innerText = "กำลังส่ง...";
             try {
                 const profile = await liff.getProfile();
                 fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId }) })
@@ -311,9 +242,7 @@
             if(swiper) setTimeout(() => swiper.updateAutoHeight(), 100);
         }
 
-        function copyMemberId() {
-            navigator.clipboard.writeText(document.getElementById("memberIdTxt").innerText).then(() => alert("คัดลอกรหัสสมาชิกเรียบร้อยแล้วค่ะ"));
-        }
+        function copyMemberId() { navigator.clipboard.writeText(document.getElementById("memberIdTxt").innerText).then(() => alert("คัดลอกรหัสสมาชิกเรียบร้อยแล้วค่ะ")); }
 
         main();
     </script>
