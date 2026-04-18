@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Láor Skincare - Full Leaderboard</title>
+    <style>
+        body { font-family: sans-serif; background-color: #f0f2f5; margin: 0; padding: 20px; text-align: center; }
+        .container { max-width: 800px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #333; border-bottom: 3px solid #ffccba; padding-bottom: 15px; margin-bottom: 20px; }
+        .user-list { list-style: none; padding: 0; margin: 0; }
+        .user-item { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; transition: background 0.2s; }
+        .user-item:hover { background: #fafafa; }
+        .user-info { display: flex; align-items: center; text-align: left; }
+        .rank-number { font-size: 20px; font-weight: bold; width: 40px; color: #888; }
+        .rank-1 { color: #d4af37; font-size: 24px; }
+        .rank-2 { color: #aaa9ad; font-size: 22px; }
+        .rank-3 { color: #cd7f32; font-size: 22px; }
+        img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd; margin-right: 15px; }
+        .name-box { display: flex; flex-direction: column; }
+        .name-box strong { font-size: 16px; color: #333; }
+        .name-box span { font-size: 12px; color: #888; margin-top: 3px; }
+        .points-box { font-size: 18px; font-weight: bold; color: #00B900; background: #e8f5e9; padding: 8px 15px; border-radius: 20px; }
+        #loading { margin-top: 50px; color: gray; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🏆 กระดานผู้นำทั้งหมด (Admin Only)</h1>
+        <div id="loading">กำลังโหลดข้อมูล...</div>
+        <ul class="user-list" id="leaderboardList"></ul>
+    </div>
+
+    <script>
+        // อย่าลืม! ตรวจสอบว่าลิงก์นี้ตรงกับ WEB_APP_URL ของคุณ
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec";
+
+        fetch(WEB_APP_URL, {
+            method: 'POST',
+            body: JSON.stringify({ action: "getFullLeaderboard" })
+        })
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("loading").style.display = "none";
+            const list = document.getElementById("leaderboardList");
+            
+            if (data.status === "success") {
+                if (data.data.length === 0) {
+                    list.innerHTML = "<p style='color:gray;'>ยังไม่มีข้อมูลสมาชิก</p>";
+                    return;
+                }
+
+                data.data.forEach((user, index) => {
+                    let rankClass = "";
+                    let rankIcon = index + 1;
+                    if (index === 0) { rankClass = "rank-1"; rankIcon = "🥇"; }
+                    if (index === 1) { rankClass = "rank-2"; rankIcon = "🥈"; }
+                    if (index === 2) { rankClass = "rank-3"; rankIcon = "🥉"; }
+
+                    list.innerHTML += `
+                        <li class="user-item">
+                            <div class="user-info">
+                                <div class="rank-number ${rankClass}">${rankIcon}</div>
+                                <img src="${user.picUrl}" onerror="this.src='https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_1280.png'" alt="Profile">
+                                <div class="name-box">
+                                    <strong>${user.name}</strong>
+                                    <span>${user.memberId}</span>
+                                </div>
+                            </div>
+                            <div class="points-box">${user.points} แต้ม</div>
+                        </li>
+                    `;
+                });
+            } else {
+                list.innerHTML = "<p style='color:red;'>เกิดข้อผิดพลาดในการโหลดข้อมูล</p>";
+            }
+        })
+        .catch(err => {
+            document.getElementById("loading").innerText = "การเชื่อมต่อล้มเหลว";
+        });
+    </script>
+</body>
+</html>
