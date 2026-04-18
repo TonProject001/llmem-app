@@ -22,11 +22,10 @@
         <div id="orderList">กำลังโหลดรายการ...</div>
 
         <div class="section">
-            <h2>จัดการแต้มลูกค้า (ค้นหาจากชื่อ)</h2>
+            <h2>จัดการแต้มลูกค้า (ค้นหาจาก รหัสสมาชิก หรือ ชื่อ)</h2>
             
-            <input type="text" id="targetSearch" list="userList" placeholder="🔍 พิมพ์ชื่อลูกค้า..." style="width: 250px;">
-            <datalist id="userList">
-                </datalist>
+            <input type="text" id="targetSearch" list="userList" placeholder="🔍 ค้นหา LAOR-xxxx..." style="width: 250px;">
+            <datalist id="userList"></datalist>
 
             <input type="number" id="manualAmount" placeholder="จำนวนแต้ม" style="width: 100px;">
             <br>
@@ -35,7 +34,6 @@
     </div>
 
     <script>
-        // ใช้ URL ของคุณ
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec";
 
         function loadOrders() {
@@ -58,18 +56,18 @@
             });
         }
 
-        // โหลดรายชื่อมาใส่ใน Datalist (ช่องค้นหาอัจฉริยะ)
         function loadUsers() {
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) })
             .then(res => res.json())
             .then(res => {
                 const datalist = document.getElementById("userList");
-                datalist.innerHTML = ''; // ล้างค่าเดิม
+                datalist.innerHTML = ''; 
                 
                 res.data.forEach(user => {
                     const option = document.createElement("option");
-                    // แสดงชื่อให้แอดมินเห็นง่ายๆ แต่ซ่อน ID ไว้ด้านหลังเพื่อส่งให้ระบบทำงาน
-                    option.value = `${user.name} (มี ${user.points} แต้ม) | ID: ${user.userId}`;
+                    // โชว์รหัสสมาชิกนำหน้า เพื่อให้ค้นหาง่ายสุดๆ
+                    const memId = user.memberId || "ยังไม่มีรหัส";
+                    option.value = `[${memId}] ${user.name} (มี ${user.points} แต้ม) | ID: ${user.userId}`;
                     datalist.appendChild(option);
                 });
             });
@@ -91,7 +89,6 @@
 
             if(!searchInput || !amount) return alert("กรุณาพิมพ์ค้นหาลูกค้าและใส่จำนวนแต้มครับ");
 
-            // ดึงเอาเฉพาะ LINE User ID ที่ซ่อนอยู่หลังคำว่า "ID: " ออกมาใช้งาน
             const parts = searchInput.split("| ID: ");
             if (parts.length < 2) return alert("กรุณาเลือกลูกค้าจากรายชื่อที่ระบบแนะนำเท่านั้นครับ");
             const userId = parts[1].trim();
@@ -101,9 +98,8 @@
                 body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: -Math.abs(amount), type: type, note: "แอดมินตัดแต้มด้วยตนเอง" })
             }).then(res => res.json())
             .then(data => { 
-                if(data.status === "error") {
-                    alert("ข้อผิดพลาด: " + data.message); // เช่น แต้มไม่พอให้ตัด
-                } else {
+                if(data.status === "error") { alert("ข้อผิดพลาด: " + data.message); } 
+                else {
                     alert("ดำเนินการสำเร็จ!"); 
                     document.getElementById("targetSearch").value = "";
                     document.getElementById("manualAmount").value = "";
