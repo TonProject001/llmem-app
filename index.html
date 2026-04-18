@@ -17,13 +17,14 @@
         .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .toggle-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #333; margin: 0; }
         .toggle-icon { font-size: 12px; transition: transform 0.3s; }
-        
         #loading { margin-top: 50px; color: gray; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ffccba; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        
-        /* สไตล์กล่องแจ้งเตือนแบบใหม่ */
         .expiry-warning { background-color: #fff4f4; color: #d9534f; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 15px; border: 1px solid #f5c6c6; display: none; line-height: 1.5; }
+        
+        /* สไตล์ปุ่ม Copy และรหัสสมาชิก */
+        .member-id-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px dashed #ccc; font-size: 14px;}
+        .copy-btn { background: #ffccba; color: #333; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px; border-radius: 5px;}
     </style>
 </head>
 <body>
@@ -34,10 +35,28 @@
         <p id="errorLog" style="color: red; font-size: 12px; margin-top: 15px;"></p>
     </div>
 
+    <div id="registerContent" style="display: none;">
+        <div class="card">
+            <h2>ลงทะเบียนสมาชิกใหม่ 🎉</h2>
+            <p style="font-size: 14px; color: gray;">กรุณากรอกข้อมูลเพื่อรับสิทธิพิเศษจาก Láor Skincare</p>
+            <input type="tel" id="regPhone" placeholder="เบอร์โทรศัพท์ (10 หลัก)" maxlength="10">
+            <p style="font-size: 14px; color: gray; text-align: left; margin: 10px 10% 0;">วันเกิด (เพื่อรับสิทธิ์เดือนเกิด)</p>
+            <input type="date" id="regBirthdate">
+            <button onclick="submitRegistration()" style="margin-top: 15px;">ยืนยันการลงทะเบียน</button>
+            <p id="regError" style="color: red; font-size: 14px; margin-top: 10px;"></p>
+        </div>
+    </div>
+
     <div id="appContent" style="display: none;">
         <div class="card" id="profileCard">
             <img id="pictureUrl" src="" alt="Profile Image">
             <h2 id="displayName">กำลังโหลด...</h2>
+            
+            <div class="member-id-box">
+                รหัสสมาชิก: <strong id="memberIdTxt" style="color: #00B900;">กำลังโหลด...</strong>
+                <button class="copy-btn" onclick="copyMemberId()">คัดลอก</button>
+            </div>
+
             <p>สถานะ: <strong id="level" style="color: #ff9d76;">กำลังโหลด...</strong></p>
             <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
             
@@ -61,9 +80,7 @@
                 <span class="toggle-icon" id="toggleIcon">▼</span>
             </h3>
             <div id="historyContent" style="display: none;">
-                <ul class="history-list" id="historyList">
-                    <li style="text-align: center; color: gray; font-size: 14px;">กำลังโหลดประวัติ...</li>
-                </ul>
+                <ul class="history-list" id="historyList"></ul>
             </div>
         </div>
     </div>
@@ -78,7 +95,7 @@
                 if (liff.isLoggedIn()) { getUserProfile(); } 
                 else { liff.login(); }
             } catch (err) {
-                document.getElementById("loading").innerHTML = "<h3>ขออภัย ไม่สามารถเชื่อมต่อระบบ LINE ได้</h3><p style='color:red; font-size:12px;'>" + err.message + "</p><p style='font-size:14px;'>กรุณาลองปิดแอป LINE แล้วเข้าใหม่อีกครั้ง</p>";
+                document.getElementById("loading").innerHTML = "<h3>ขออภัย เกิดข้อผิดพลาด</h3><p>" + err.message + "</p>";
             }
         }
 
@@ -87,43 +104,71 @@
                 const profile = await liff.getProfile();
                 document.getElementById("pictureUrl").src = profile.pictureUrl;
                 document.getElementById("displayName").innerText = profile.displayName;
-                
-                document.getElementById("loading").style.display = "none";
-                document.getElementById("appContent").style.display = "block";
-
-                fetchUserData(profile);
-                fetchOrderHistory(profile.userId);
-            } catch (err) {
-                document.getElementById("errorLog").innerText = "ดึงข้อมูลโปรไฟล์ไม่สำเร็จ: " + err.message;
-            }
+                checkUserRegistration(profile);
+            } catch (err) { document.getElementById("errorLog").innerText = "ดึงโปรไฟล์ไม่สำเร็จ"; }
         }
 
-        function fetchUserData(profile) {
+        function checkUserRegistration(profile) {
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId, displayName: profile.displayName })
+                body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId })
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === "success") {
-                    document.getElementById("points").innerText = data.points;
-                    document.getElementById("level").innerText = data.level;
-                    
-                    const warningBox = document.getElementById("expiryWarningBox");
-                    if (data.expiringAmount > 0 && data.earliestExpiry) {
-                        const expDate = new Date(data.earliestExpiry);
-                        const day = String(expDate.getDate()).padStart(2, '0');
-                        const month = String(expDate.getMonth() + 1).padStart(2, '0');
-                        const year = expDate.getFullYear();
-                        
-                        document.getElementById("expPoints").innerText = data.expiringAmount;
-                        document.getElementById("expDate").innerText = `${day}/${month}/${year}`;
-                        warningBox.style.display = "block";
-                    } else {
-                        warningBox.style.display = "none";
-                    }
+                document.getElementById("loading").style.display = "none";
+                
+                // ถ้าระบบบอกว่า "need_info" ให้เปิดหน้าต่างลงทะเบียน
+                if (data.status === "need_info") {
+                    document.getElementById("registerContent").style.display = "block";
+                } 
+                // ถ้ามีข้อมูลครบแล้ว เปิดหน้าแอปหลักได้เลย
+                else if (data.status === "success") {
+                    document.getElementById("appContent").style.display = "block";
+                    updateUI(data);
+                    fetchOrderHistory(profile.userId);
                 }
             });
+        }
+
+        async function submitRegistration() {
+            const phone = document.getElementById("regPhone").value;
+            const birthdate = document.getElementById("regBirthdate").value;
+            const errorTxt = document.getElementById("regError");
+
+            if(phone.length < 9) { errorTxt.innerText = "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง"; return; }
+            if(!birthdate) { errorTxt.innerText = "กรุณาระบุวันเกิด"; return; }
+
+            errorTxt.style.color = "orange";
+            errorTxt.innerText = "กำลังบันทึกข้อมูล...";
+            
+            const profile = await liff.getProfile();
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "saveProfile", lineUserId: profile.userId, displayName: profile.displayName, phone: phone, birthdate: birthdate })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.status === "success") {
+                    // ลงทะเบียนเสร็จ โหลดแอปใหม่
+                    document.getElementById("registerContent").style.display = "none";
+                    document.getElementById("loading").style.display = "block";
+                    checkUserRegistration(profile);
+                }
+            });
+        }
+
+        function updateUI(data) {
+            document.getElementById("points").innerText = data.points;
+            document.getElementById("level").innerText = data.level;
+            document.getElementById("memberIdTxt").innerText = data.memberId;
+            
+            const warningBox = document.getElementById("expiryWarningBox");
+            if (data.expiringAmount > 0 && data.earliestExpiry) {
+                const expDate = new Date(data.earliestExpiry);
+                document.getElementById("expPoints").innerText = data.expiringAmount;
+                document.getElementById("expDate").innerText = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
+                warningBox.style.display = "block";
+            } else { warningBox.style.display = "none"; }
         }
 
         function fetchOrderHistory(userId) {
@@ -136,10 +181,7 @@
                 if (data.status === "success") {
                     const list = document.getElementById("historyList");
                     list.innerHTML = ""; 
-                    if (data.data.length === 0) {
-                        list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>";
-                        return;
-                    }
+                    if (data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; return; }
                     data.data.forEach(item => {
                         let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
                         let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
@@ -155,7 +197,6 @@
             const statusText = document.getElementById("statusMessage");
 
             if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อด้วยค่ะ"); return; }
-
             statusText.style.color = "orange";
             statusText.innerText = "กำลังส่งข้อมูล...";
             
@@ -164,38 +205,32 @@
                 fetch(WEB_APP_URL, {
                     method: 'POST',
                     body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId })
-                })
-                .then(res => res.json())
-                .then(data => {
+                }).then(res => res.json()).then(data => {
                     if(data.status === "success") {
                         statusText.style.color = "green";
                         statusText.innerText = "ส่งสำเร็จ! รอตรวจสอบนะคะ";
                         orderInput.value = "";
                         fetchOrderHistory(profile.userId);
-                        
                         document.getElementById("historyContent").style.display = "block";
                         document.getElementById("toggleIcon").innerText = "▲";
                     } else {
                         statusText.style.color = "red";
                         statusText.innerText = data.message; 
                     }
-                }).catch(() => {
-                    statusText.style.color = "red";
-                    statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่";
-                });
+                }).catch(() => { statusText.style.color = "red"; statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่"; });
             } catch (err) { alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่"); }
         }
 
         function toggleHistory() {
             const content = document.getElementById("historyContent");
             const icon = document.getElementById("toggleIcon");
-            if (content.style.display === "none") {
-                content.style.display = "block";
-                icon.innerText = "▲";
-            } else {
-                content.style.display = "none";
-                icon.innerText = "▼";
-            }
+            if (content.style.display === "none") { content.style.display = "block"; icon.innerText = "▲"; } 
+            else { content.style.display = "none"; icon.innerText = "▼"; }
+        }
+
+        function copyMemberId() {
+            const idText = document.getElementById("memberIdTxt").innerText;
+            navigator.clipboard.writeText(idText).then(() => { alert("คัดลอกรหัสสมาชิก: " + idText + " เรียบร้อยแล้วค่ะ"); });
         }
 
         main();
