@@ -22,7 +22,7 @@
         <div id="orderList">กำลังโหลดรายการ...</div>
 
         <div class="section">
-            <h2>จัดการแต้มลูกค้า (ค้นหาจาก รหัสสมาชิก หรือ ชื่อ)</h2>
+            <h2>จัดการแต้ม (รหัสสมาชิก)</h2>
             
             <input type="text" id="targetSearch" list="userList" placeholder="🔍 ค้นหา LAOR-xxxx..." style="width: 250px;">
             <datalist id="userList"></datalist>
@@ -65,7 +65,6 @@
                 
                 res.data.forEach(user => {
                     const option = document.createElement("option");
-                    // โชว์รหัสสมาชิกนำหน้า เพื่อให้ค้นหาง่ายสุดๆ
                     const memId = user.memberId || "ยังไม่มีรหัส";
                     option.value = `[${memId}] ${user.name} (มี ${user.points} แต้ม) | ID: ${user.userId}`;
                     datalist.appendChild(option);
