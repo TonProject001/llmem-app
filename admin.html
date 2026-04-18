@@ -9,9 +9,8 @@
         .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         h2 { color: #333; border-bottom: 2px solid #ffccba; padding-bottom: 10px; }
         .order-item { border: 1px solid #ddd; padding: 15px; border-radius: 8px; margin-bottom: 10px; }
-        input, select { padding: 8px; margin-right: 10px; border-radius: 5px; border: 1px solid #ccc; }
-        select { width: 250px; font-size: 14px; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 5px; color: white; }
+        input, select { padding: 8px; margin-right: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px;}
+        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 5px; color: white; font-size: 14px;}
         .btn-add { background: #28a745; }
         .btn-del { background: #dc3545; margin-top: 10px; }
         .section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
@@ -23,10 +22,12 @@
         <div id="orderList">กำลังโหลดรายการ...</div>
 
         <div class="section">
-            <h2>จัดการแต้มลูกค้า (Manual Edit)</h2>
-            <select id="targetId">
-                <option value="">-- เลือกลูกค้า (กำลังโหลด...) --</option>
-            </select>
+            <h2>จัดการแต้มลูกค้า (ค้นหาจากชื่อ)</h2>
+            
+            <input type="text" id="targetSearch" list="userList" placeholder="🔍 พิมพ์ชื่อลูกค้า..." style="width: 250px;">
+            <datalist id="userList">
+                </datalist>
+
             <input type="number" id="manualAmount" placeholder="จำนวนแต้ม" style="width: 100px;">
             <br>
             <button class="btn-del" onclick="manualUpdate('Deduct')">ตัดแต้ม</button>
@@ -43,7 +44,7 @@
             .then(res => {
                 const list = document.getElementById("orderList");
                 list.innerHTML = "";
-                if (res.data.length === 0) list.innerHTML = "ไม่มีรายการค้างส่ง";
+                if (res.data.length === 0) list.innerHTML = "<p style='color:gray;'>ไม่มีรายการออร์เดอร์ค้างส่ง</p>";
                 res.data.forEach(item => {
                     const div = document.createElement("div");
                     div.className = "order-item";
@@ -57,19 +58,19 @@
             });
         }
 
-        // ฟังก์ชันใหม่: ดึงรายชื่อมาใส่ใน Dropdown
+        // โหลดรายชื่อมาใส่ใน Datalist (ช่องค้นหาอัจฉริยะ)
         function loadUsers() {
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getAllUsers" }) })
             .then(res => res.json())
             .then(res => {
-                const select = document.getElementById("targetId");
-                select.innerHTML = '<option value="">-- เลือกลูกค้า --</option>'; // ล้างค่าเดิม
+                const datalist = document.getElementById("userList");
+                datalist.innerHTML = ''; // ล้างค่าเดิม
+                
                 res.data.forEach(user => {
-                    // แสดงชื่อลูกค้า และแต้มปัจจุบันในวงเล็บ
                     const option = document.createElement("option");
-                    option.value = user.userId;
-                    option.text = `${user.name} (มี ${user.points} แต้ม)`;
-                    select.appendChild(option);
+                    // แสดงชื่อให้แอดมินเห็นง่ายๆ แต่ซ่อน ID ไว้ด้านหลังเพื่อส่งให้ระบบทำงาน
+                    option.value = `${user.name} (มี ${user.points} แต้ม) | ID: ${user.userId}`;
+                    datalist.appendChild(option);
                 });
             });
         }
@@ -81,25 +82,36 @@
             fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: pts, type: "Approve", orderRow: row, note: "อนุมัติจากออร์เดอร์" })
-            }).then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); loadUsers(); }); // โหลดรายชื่อใหม่เพื่ออัปเดตแต้มในวงเล็บ
+            }).then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); loadUsers(); }); 
         }
 
         function manualUpdate(type) {
-            const userId = document.getElementById("targetId").value;
+            const searchInput = document.getElementById("targetSearch").value;
             const amount = document.getElementById("manualAmount").value;
-            if(!userId || !amount) return alert("กรุณาเลือกลูกค้าและใส่จำนวนแต้มครับ");
+
+            if(!searchInput || !amount) return alert("กรุณาพิมพ์ค้นหาลูกค้าและใส่จำนวนแต้มครับ");
+
+            // ดึงเอาเฉพาะ LINE User ID ที่ซ่อนอยู่หลังคำว่า "ID: " ออกมาใช้งาน
+            const parts = searchInput.split("| ID: ");
+            if (parts.length < 2) return alert("กรุณาเลือกลูกค้าจากรายชื่อที่ระบบแนะนำเท่านั้นครับ");
+            const userId = parts[1].trim();
 
             fetch(WEB_APP_URL, {
                 method: 'POST',
                 body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: -Math.abs(amount), type: type, note: "แอดมินตัดแต้มด้วยตนเอง" })
-            }).then(() => { 
-                alert("ดำเนินการสำเร็จ!"); 
-                document.getElementById("manualAmount").value = "";
-                loadUsers(); // โหลดรายชื่อใหม่เพื่ออัปเดตแต้ม
+            }).then(res => res.json())
+            .then(data => { 
+                if(data.status === "error") {
+                    alert("ข้อผิดพลาด: " + data.message); // เช่น แต้มไม่พอให้ตัด
+                } else {
+                    alert("ดำเนินการสำเร็จ!"); 
+                    document.getElementById("targetSearch").value = "";
+                    document.getElementById("manualAmount").value = "";
+                    loadUsers(); 
+                }
             });
         }
 
-        // สั่งให้โหลดข้อมูลทั้ง 2 อย่างตอนเปิดหน้าเว็บ
         loadOrders();
         loadUsers();
     </script>
