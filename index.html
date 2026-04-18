@@ -11,20 +11,28 @@
         img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
         input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
         button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        .history-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
-        .history-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
+        
+        .history-list, .rank-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
+        .history-item, .rank-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
+        
         .status-pending { color: #ff9800; font-weight: bold; background: #fff3e0; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .status-approved { color: #4caf50; font-weight: bold; background: #e8f5e9; padding: 4px 8px; border-radius: 12px; font-size: 12px;}
         .toggle-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #333; margin: 0; }
         .toggle-icon { font-size: 12px; transition: transform 0.3s; }
+        
         #loading { margin-top: 50px; color: gray; }
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #ffccba; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 15px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .expiry-warning { background-color: #fff4f4; color: #d9534f; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 15px; border: 1px solid #f5c6c6; display: none; line-height: 1.5; }
         
-        /* สไตล์ปุ่ม Copy และรหัสสมาชิก */
+        .expiry-warning { background-color: #fff4f4; color: #d9534f; padding: 12px; border-radius: 10px; font-size: 14px; margin-top: 15px; border: 1px solid #f5c6c6; display: none; line-height: 1.5; }
         .member-id-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px dashed #ccc; font-size: 14px;}
         .copy-btn { background: #ffccba; color: #333; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px; border-radius: 5px;}
+        
+        /* สไตล์สำหรับตารางจัดอันดับ */
+        .rank-1 { color: #d4af37; font-weight: bold; font-size: 16px; } /* สีทอง */
+        .rank-2 { color: #aaa9ad; font-weight: bold; } /* สีเงิน */
+        .rank-3 { color: #cd7f32; font-weight: bold; } /* สีทองแดง */
+        .my-rank-box { background-color: #fff3cd; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #856404; text-align: center; border: 1px solid #ffeeba;}
     </style>
 </head>
 <body>
@@ -74,10 +82,25 @@
             <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
         </div>
 
+        <div class="card" id="leaderboardCard">
+            <h3 class="toggle-header" onclick="toggleSection('leaderboardContent', 'toggleIconLB')">
+                <span>🏆 อันดับคะแนนสะสม (Top 10)</span>
+                <span class="toggle-icon" id="toggleIconLB">▼</span>
+            </h3>
+            <div id="leaderboardContent" style="display: none;">
+                <ul class="rank-list" id="rankList">
+                    <li style="text-align: center; color: gray; font-size: 14px;">กำลังจัดอันดับ...</li>
+                </ul>
+                <div class="my-rank-box">
+                    คุณอยู่ในอันดับที่: <span id="myRankDisplay">...</span>
+                </div>
+            </div>
+        </div>
+
         <div class="card" id="historyCard">
-            <h3 class="toggle-header" onclick="toggleHistory()">
+            <h3 class="toggle-header" onclick="toggleSection('historyContent', 'toggleIconHist')">
                 <span>ประวัติการแจ้งออร์เดอร์</span>
-                <span class="toggle-icon" id="toggleIcon">▼</span>
+                <span class="toggle-icon" id="toggleIconHist">▼</span>
             </h3>
             <div id="historyContent" style="display: none;">
                 <ul class="history-list" id="historyList"></ul>
@@ -117,15 +140,14 @@
             .then(data => {
                 document.getElementById("loading").style.display = "none";
                 
-                // ถ้าระบบบอกว่า "need_info" ให้เปิดหน้าต่างลงทะเบียน
                 if (data.status === "need_info") {
                     document.getElementById("registerContent").style.display = "block";
                 } 
-                // ถ้ามีข้อมูลครบแล้ว เปิดหน้าแอปหลักได้เลย
                 else if (data.status === "success") {
                     document.getElementById("appContent").style.display = "block";
                     updateUI(data);
                     fetchOrderHistory(profile.userId);
+                    fetchLeaderboard(profile.userId); // เรียกโหลดตารางจัดอันดับ
                 }
             });
         }
@@ -149,7 +171,6 @@
             .then(res => res.json())
             .then(data => {
                 if(data.status === "success") {
-                    // ลงทะเบียนเสร็จ โหลดแอปใหม่
                     document.getElementById("registerContent").style.display = "none";
                     document.getElementById("loading").style.display = "block";
                     checkUserRegistration(profile);
@@ -169,6 +190,42 @@
                 document.getElementById("expDate").innerText = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
                 warningBox.style.display = "block";
             } else { warningBox.style.display = "none"; }
+        }
+
+        // ฟังก์ชันดึงข้อมูลจัดอันดับ
+        function fetchLeaderboard(userId) {
+            fetch(WEB_APP_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: "getLeaderboard", lineUserId: userId })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    const list = document.getElementById("rankList");
+                    list.innerHTML = ""; 
+                    
+                    data.top10.forEach(item => {
+                        let rankClass = "";
+                        if(item.rank === 1) rankClass = "rank-1";
+                        if(item.rank === 2) rankClass = "rank-2";
+                        if(item.rank === 3) rankClass = "rank-3";
+                        
+                        let medal = item.rank;
+                        if(item.rank === 1) medal = "🥇";
+                        if(item.rank === 2) medal = "🥈";
+                        if(item.rank === 3) medal = "🥉";
+
+                        list.innerHTML += `
+                            <li class="rank-item">
+                                <span><strong class="${rankClass}">${medal}</strong> ${item.name}</span>
+                                <span><strong style="color: #ff9d76;">${item.points}</strong> แต้ม</span>
+                            </li>
+                        `;
+                    });
+                    
+                    document.getElementById("myRankDisplay").innerText = data.myRank > 0 ? data.myRank : "-";
+                }
+            });
         }
 
         function fetchOrderHistory(userId) {
@@ -212,7 +269,7 @@
                         orderInput.value = "";
                         fetchOrderHistory(profile.userId);
                         document.getElementById("historyContent").style.display = "block";
-                        document.getElementById("toggleIcon").innerText = "▲";
+                        document.getElementById("toggleIconHist").innerText = "▲";
                     } else {
                         statusText.style.color = "red";
                         statusText.innerText = data.message; 
@@ -221,9 +278,10 @@
             } catch (err) { alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่"); }
         }
 
-        function toggleHistory() {
-            const content = document.getElementById("historyContent");
-            const icon = document.getElementById("toggleIcon");
+        // รวมฟังก์ชันเปิดปิดการ์ดให้ใช้ได้กับหลายหน้าต่าง
+        function toggleSection(contentId, iconId) {
+            const content = document.getElementById(contentId);
+            const icon = document.getElementById(iconId);
             if (content.style.display === "none") { content.style.display = "block"; icon.innerText = "▲"; } 
             else { content.style.display = "none"; icon.innerText = "▼"; }
         }
