@@ -29,13 +29,11 @@
         .my-rank-box { background-color: #fff3cd; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #856404; text-align: center; border: 1px solid #ffeeba;}
         .swiper { width: 100%; padding-bottom: 40px; }
         .swiper-slide { padding: 0 20px; box-sizing: border-box; }
-        
-        /* สไตล์สำหรับการ์ดโปรโมชั่น */
         .reward-item { border: 1px solid #eee; border-radius: 12px; overflow: hidden; margin-bottom: 20px; text-align: left; background: #fff;}
         .reward-img { width: 100%; max-width: 1000px; aspect-ratio: 1/1; object-fit: cover; background: #f0f0f0; }
         .reward-info { padding: 15px; }
         .reward-info h4 { margin: 0 0 10px; color: #333; }
-        .reward-info p { font-size: 13px; color: #666; margin: 5px 0; }
+        .reward-info p { font-size: 13px; color: #666; margin: 5px 0; line-height: 1.4;}
         .reward-tag { display: inline-block; background: #ffccba; color: #333; padding: 3px 10px; border-radius: 5px; font-size: 12px; font-weight: bold; margin-bottom: 10px;}
     </style>
 </head>
@@ -108,8 +106,8 @@
 
                 <div class="swiper-slide">
                     <div class="card">
-                        <h3>🎁 โปรโมชั่นพิเศษสำหรับคุณ</h3>
-                        <div id="rewardContainer">กำลังโหลดโปรโมชั่น...</div>
+                        <h3 id="dynamicPromoHeader">กำลังโหลด...</h3>
+                        <div id="rewardContainer"></div>
                     </div>
                 </div>
                 
@@ -146,7 +144,7 @@
                     updateUI(data);
                     fetchOrderHistory(profile.userId);
                     fetchLeaderboard(profile.userId);
-                    fetchRewards(); // โหลดโปรโมชั่น
+                    fetchRewards(); 
                     setTimeout(() => {
                         swiper = new Swiper('.mySwiper', { loop: true, autoHeight: true, pagination: { el: '.swiper-pagination', clickable: true }, spaceBetween: 10 });
                     }, 100);
@@ -158,9 +156,17 @@
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getRewards" }) })
             .then(res => res.json())
             .then(data => {
+                // เปลี่ยนหัวข้อตามหน้า Settings
+                if(data.promoTitle) {
+                    document.getElementById("dynamicPromoHeader").innerText = data.promoTitle;
+                }
+
                 const container = document.getElementById("rewardContainer");
                 container.innerHTML = "";
-                if (data.data.length === 0) { container.innerHTML = "ขณะนี้ยังไม่มีโปรโมชั่นใหม่"; return; }
+                if (!data.data || data.data.length === 0) { 
+                    container.innerHTML = "<p style='color:gray;font-size:14px;margin-top:15px;'>ขณะนี้ยังไม่มีโปรโมชั่นใหม่ค่ะ</p>"; 
+                    return; 
+                }
                 data.data.forEach(item => {
                     container.innerHTML += `
                         <div class="reward-item">
@@ -169,25 +175,26 @@
                                 <span class="reward-tag">ใช้ ${item.points} แต้ม</span>
                                 <h4>${item.name}</h4>
                                 <p>${item.desc}</p>
-                                <p style="font-size:11px; color:#999;">หมดเขต: ${item.expiry}</p>
+                                <p style="font-size:11px; color:#999; margin-top:8px;">หมดเขต: ${item.expiry}</p>
                             </div>
                         </div>`;
                 });
-                if(swiper) swiper.updateAutoHeight();
+                if(swiper) setTimeout(() => swiper.updateAutoHeight(), 200);
             });
         }
 
-        // ฟังก์ชันอื่นๆ ยังเหมือนเดิม (updateUI, fetchOrderHistory, fetchLeaderboard, submitOrder, etc.)
         function updateUI(data) {
             document.getElementById("points").innerText = data.points;
             document.getElementById("level").innerText = data.level;
             document.getElementById("memberIdTxt").innerText = data.memberId;
             const box = document.getElementById("expiryWarningBox");
-            if (data.expiringAmount > 0) {
+            if (data.expiringAmount > 0 && data.earliestExpiry) {
                 const exp = new Date(data.earliestExpiry);
                 document.getElementById("expPoints").innerText = data.expiringAmount;
-                document.getElementById("expDate").innerText = `${exp.getDate()}/${exp.getMonth()+1}/${exp.getFullYear()}`;
+                document.getElementById("expDate").innerText = `${String(exp.getDate()).padStart(2, '0')}/${String(exp.getMonth()+1).padStart(2, '0')}/${exp.getFullYear()}`;
                 box.style.display = "block";
+            } else {
+                box.style.display = "none";
             }
         }
 
@@ -197,30 +204,38 @@
                 data.top10.forEach(u => {
                     list.innerHTML += `<li class="rank-item"><span>${u.rank}. ${u.name}</span><span>${u.points} แต้ม</span></li>`;
                 });
-                document.getElementById("myRankDisplay").innerText = data.myRank;
+                document.getElementById("myRankDisplay").innerText = data.myRank > 0 ? data.myRank : "-";
             });
         }
 
         function fetchOrderHistory(userId) {
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId }) }).then(res => res.json()).then(data => {
                 const list = document.getElementById("historyList"); list.innerHTML = "";
-                data.data.forEach(h => {
-                    list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`;
-                });
+                if(data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; }
+                else {
+                    data.data.forEach(h => {
+                        list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`;
+                    });
+                }
             });
         }
 
         async function submitOrder() {
             const input = document.getElementById("orderId");
             const status = document.getElementById("statusMessage");
-            if(!input.value) return;
+            const orderId = input.value.trim().toUpperCase();
+            if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อ"); return; }
+            status.style.color = "orange";
             status.innerText = "กำลังส่ง...";
-            const profile = await liff.getProfile();
-            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: input.value.toUpperCase() }) })
-            .then(res => res.json()).then(data => {
-                if(data.status === "success") { status.innerText = "ส่งสำเร็จ!"; input.value = ""; fetchOrderHistory(profile.userId); }
-                else { status.innerText = data.message; }
-            });
+            try {
+                const profile = await liff.getProfile();
+                fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId }) })
+                .then(res => res.json()).then(data => {
+                    if(data.status === "success") { status.style.color="green"; status.innerText = "ส่งสำเร็จ!"; input.value = ""; fetchOrderHistory(profile.userId); }
+                    else { status.style.color="red"; status.innerText = data.message; }
+                    if(swiper) swiper.updateAutoHeight();
+                });
+            } catch (err) { alert("เกิดข้อผิดพลาด กรุณาลองใหม่"); }
         }
 
         function toggleSection(cId, iId) {
