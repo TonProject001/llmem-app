@@ -12,6 +12,7 @@
         input, select { padding: 8px; margin-right: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px;}
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 5px; color: white; font-size: 14px;}
         .btn-add { background: #28a745; }
+        .btn-special { background: #17a2b8; margin-top: 10px; margin-right: 5px;} /* ปุ่มเติมแต้มพิเศษสีฟ้า */
         .btn-del { background: #dc3545; margin-top: 10px; }
         .section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
     </style>
@@ -29,7 +30,8 @@
 
             <input type="number" id="manualAmount" placeholder="จำนวนแต้ม" style="width: 100px;">
             <br>
-            <button class="btn-del" onclick="manualUpdate('Deduct')">ตัดแต้ม</button>
+            <button class="btn-special" onclick="manualUpdate('Add')">➕ เพิ่มแต้มพิเศษ</button>
+            <button class="btn-del" onclick="manualUpdate('Deduct')">➖ ตัดแต้ม</button>
         </div>
     </div>
 
@@ -82,27 +84,46 @@
             }).then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); loadUsers(); }); 
         }
 
-        function manualUpdate(type) {
+        // ฟังก์ชันใหม่ที่แยกการทำงานระหว่าง "เพิ่มแต้ม" และ "ตัดแต้ม"
+        function manualUpdate(actionType) {
             const searchInput = document.getElementById("targetSearch").value;
-            const amount = document.getElementById("manualAmount").value;
+            const amountInput = document.getElementById("manualAmount").value;
 
-            if(!searchInput || !amount) return alert("กรุณาพิมพ์ค้นหาลูกค้าและใส่จำนวนแต้มครับ");
+            if(!searchInput || !amountInput) return alert("กรุณาพิมพ์ค้นหาลูกค้าและใส่จำนวนแต้มครับ");
 
             const parts = searchInput.split("| ID: ");
             if (parts.length < 2) return alert("กรุณาเลือกลูกค้าจากรายชื่อที่ระบบแนะนำเท่านั้นครับ");
             const userId = parts[1].trim();
 
+            let finalAmount = 0;
+            let backendType = "";
+            let noteStr = "";
+
+            // แยกโลจิกการคำนวณแต้ม
+            if (actionType === 'Add') {
+                finalAmount = Math.abs(amountInput); // บังคับเป็นค่าบวก
+                backendType = "Approve"; // ใช้สถานะ Approve เพื่อให้แต้มมีอายุ 1 ปีอัตโนมัติ
+                noteStr = "แอดมินเพิ่มแต้มพิเศษ";
+            } else {
+                finalAmount = -Math.abs(amountInput); // บังคับเป็นค่าลบ
+                backendType = "Deduct";
+                noteStr = "แอดมินตัดแต้มด้วยตนเอง";
+            }
+
+            // ส่งข้อมูลไปหลังบ้าน
             fetch(WEB_APP_URL, {
                 method: 'POST',
-                body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: -Math.abs(amount), type: type, note: "แอดมินตัดแต้มด้วยตนเอง" })
+                body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: finalAmount, type: backendType, note: noteStr })
             }).then(res => res.json())
             .then(data => { 
-                if(data.status === "error") { alert("ข้อผิดพลาด: " + data.message); } 
-                else {
+                if(data.status === "error") { 
+                    alert("ข้อผิดพลาด: " + data.message); 
+                } else {
                     alert("ดำเนินการสำเร็จ!"); 
+                    // ล้างช่องกรอกเพื่อพร้อมทำงานเคสต่อไป
                     document.getElementById("targetSearch").value = "";
                     document.getElementById("manualAmount").value = "";
-                    loadUsers(); 
+                    loadUsers(); // โหลดรายชื่อใหม่เพื่ออัปเดตแต้มโชว์แอดมิน
                 }
             });
         }
