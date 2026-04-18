@@ -5,8 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Láor Skincare Member</title>
     <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <style>
-        body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 20px; }
+        body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 15px 0; margin: 0; overflow-x: hidden; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
         img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
         input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
@@ -28,11 +32,15 @@
         .member-id-box { background: #f9f9f9; padding: 10px; border-radius: 8px; margin: 15px 0; border: 1px dashed #ccc; font-size: 14px;}
         .copy-btn { background: #ffccba; color: #333; padding: 5px 10px; font-size: 12px; width: auto; margin-left: 10px; border-radius: 5px;}
         
-        /* สไตล์สำหรับตารางจัดอันดับ */
-        .rank-1 { color: #d4af37; font-weight: bold; font-size: 16px; } /* สีทอง */
-        .rank-2 { color: #aaa9ad; font-weight: bold; } /* สีเงิน */
-        .rank-3 { color: #cd7f32; font-weight: bold; } /* สีทองแดง */
+        .rank-1 { color: #d4af37; font-weight: bold; font-size: 16px; } 
+        .rank-2 { color: #aaa9ad; font-weight: bold; } 
+        .rank-3 { color: #cd7f32; font-weight: bold; } 
         .my-rank-box { background-color: #fff3cd; padding: 10px; border-radius: 8px; margin-top: 15px; font-weight: bold; color: #856404; text-align: center; border: 1px solid #ffeeba;}
+        
+        /* สไตล์สำหรับตัวสไลด์ */
+        .swiper { width: 100%; padding-bottom: 40px; /* เว้นที่ให้จุดไข่ปลา */ }
+        .swiper-slide { padding: 0 20px; box-sizing: border-box; }
+        .swipe-hint { color: #888; font-size: 13px; margin-bottom: 10px; text-align: center; }
     </style>
 </head>
 <body>
@@ -43,7 +51,7 @@
         <p id="errorLog" style="color: red; font-size: 12px; margin-top: 15px;"></p>
     </div>
 
-    <div id="registerContent" style="display: none;">
+    <div id="registerContent" style="display: none; padding: 0 20px;">
         <div class="card">
             <h2>ลงทะเบียนสมาชิกใหม่ 🎉</h2>
             <p style="font-size: 14px; color: gray;">กรุณากรอกข้อมูลเพื่อรับสิทธิพิเศษจาก Láor Skincare</p>
@@ -56,61 +64,78 @@
     </div>
 
     <div id="appContent" style="display: none;">
-        <div class="card" id="profileCard">
-            <img id="pictureUrl" src="" alt="Profile Image">
-            <h2 id="displayName">กำลังโหลด...</h2>
-            
-            <div class="member-id-box">
-                รหัสสมาชิก: <strong id="memberIdTxt" style="color: #00B900;">กำลังโหลด...</strong>
-                <button class="copy-btn" onclick="copyMemberId()">คัดลอก</button>
-            </div>
+        <div class="swipe-hint">👈 ปัดซ้าย-ขวา เพื่อเปลี่ยนหน้า 👉</div>
+        
+        <div class="swiper mySwiper">
+            <div class="swiper-wrapper">
+                
+                <div class="swiper-slide">
+                    <div class="card" id="profileCard">
+                        <img id="pictureUrl" src="" alt="Profile Image">
+                        <h2 id="displayName">กำลังโหลด...</h2>
+                        
+                        <div class="member-id-box">
+                            รหัสสมาชิก: <strong id="memberIdTxt" style="color: #00B900;">กำลังโหลด...</strong>
+                            <button class="copy-btn" onclick="copyMemberId()">คัดลอก</button>
+                        </div>
 
-            <p>สถานะ: <strong id="level" style="color: #ff9d76;">กำลังโหลด...</strong></p>
-            <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
-            
-            <div id="expiryWarningBox" class="expiry-warning">
-                แจ้งเตือน: <strong id="expPoints">0</strong> แต้ม <br>
-                หมดอายุ (วันที่ <span id="expDate">-</span>)
-            </div>
-        </div>
-
-        <div class="card" id="orderCard">
-            <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
-            <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
-            <input type="text" id="orderId" placeholder="เช่น ORD-12345">
-            <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
-            <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
-        </div>
-
-        <div class="card" id="leaderboardCard">
-            <h3 class="toggle-header" onclick="toggleSection('leaderboardContent', 'toggleIconLB')">
-                <span>🏆 อันดับคะแนนสะสม (Top 10)</span>
-                <span class="toggle-icon" id="toggleIconLB">▼</span>
-            </h3>
-            <div id="leaderboardContent" style="display: none;">
-                <ul class="rank-list" id="rankList">
-                    <li style="text-align: center; color: gray; font-size: 14px;">กำลังจัดอันดับ...</li>
-                </ul>
-                <div class="my-rank-box">
-                    คุณอยู่ในอันดับที่: <span id="myRankDisplay">...</span>
+                        <p>สถานะ: <strong id="level" style="color: #ff9d76;">กำลังโหลด...</strong></p>
+                        <p>แต้มสะสม: <strong id="points">0</strong> แต้ม</p>
+                        
+                        <div id="expiryWarningBox" class="expiry-warning">
+                            แจ้งเตือน: <strong id="expPoints">0</strong> แต้ม <br>
+                            หมดอายุ (วันที่ <span id="expDate">-</span>)
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="card" id="historyCard">
-            <h3 class="toggle-header" onclick="toggleSection('historyContent', 'toggleIconHist')">
-                <span>ประวัติการแจ้งออร์เดอร์</span>
-                <span class="toggle-icon" id="toggleIconHist">▼</span>
-            </h3>
-            <div id="historyContent" style="display: none;">
-                <ul class="history-list" id="historyList"></ul>
+                <div class="swiper-slide">
+                    <div class="card" id="leaderboardCard">
+                        <h3 class="toggle-header" onclick="toggleSection('leaderboardContent', 'toggleIconLB')">
+                            <span>🏆 อันดับคะแนนสะสม (Top 10)</span>
+                            <span class="toggle-icon" id="toggleIconLB">▼</span>
+                        </h3>
+                        <div id="leaderboardContent" style="display: block;">
+                            <ul class="rank-list" id="rankList">
+                                <li style="text-align: center; color: gray; font-size: 14px;">กำลังจัดอันดับ...</li>
+                            </ul>
+                            <div class="my-rank-box">
+                                คุณอยู่ในอันดับที่: <span id="myRankDisplay">...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="swiper-slide">
+                    <div class="card" id="orderCard">
+                        <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
+                        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
+                        <input type="text" id="orderId" placeholder="เช่น ORD-12345">
+                        <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
+                        <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
+                    </div>
+
+                    <div class="card" id="historyCard">
+                        <h3 class="toggle-header" onclick="toggleSection('historyContent', 'toggleIconHist')">
+                            <span>ประวัติการแจ้งออร์เดอร์</span>
+                            <span class="toggle-icon" id="toggleIconHist">▼</span>
+                        </h3>
+                        <div id="historyContent" style="display: block;">
+                            <ul class="history-list" id="historyList"></ul>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
+            <div class="swiper-pagination"></div>
         </div>
     </div>
 
     <script>
         const LIFF_ID = "2009822263-SUKU0laL";
         const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzweZX0Er9qzwPd3pVOhNTXZHVJRrJNW6E-v1e4xgk3AacU2lq3PGfwMQyjNB8iJhaWvg/exec"; 
+        
+        let swiper; // ตัวแปรสำหรับเก็บระบบสไลด์
 
         async function main() {
             try {
@@ -147,8 +172,24 @@
                     document.getElementById("appContent").style.display = "block";
                     updateUI(data);
                     fetchOrderHistory(profile.userId);
-                    fetchLeaderboard(profile.userId); // เรียกโหลดตารางจัดอันดับ
+                    fetchLeaderboard(profile.userId);
+                    
+                    // เมื่อโหลดหน้าเว็บเสร็จ ให้เริ่มทำงานระบบสไลด์ปัดหน้าจอ
+                    setTimeout(initSwiper, 100); 
                 }
+            });
+        }
+        
+        // ฟังก์ชันตั้งค่าการปัดหน้าจอ
+        function initSwiper() {
+            swiper = new Swiper('.mySwiper', {
+                loop: true, // ตั้งค่าให้ปัดวนขวาซ้ายได้ไม่รู้จบ
+                autoHeight: true, // ปรับความสูงหน้าจออัตโนมัติตามเนื้อหาการ์ด
+                pagination: {
+                    el: '.swiper-pagination',
+                    clickable: true,
+                },
+                spaceBetween: 10 // ระยะห่างระหว่างหน้าสไลด์
             });
         }
 
@@ -190,9 +231,10 @@
                 document.getElementById("expDate").innerText = `${String(expDate.getDate()).padStart(2, '0')}/${String(expDate.getMonth() + 1).padStart(2, '0')}/${expDate.getFullYear()}`;
                 warningBox.style.display = "block";
             } else { warningBox.style.display = "none"; }
+            
+            if(swiper) swiper.updateAutoHeight(); // อัปเดตความสูงเผื่อมีการเพิ่มกล่องแจ้งเตือน
         }
 
-        // ฟังก์ชันดึงข้อมูลจัดอันดับ
         function fetchLeaderboard(userId) {
             fetch(WEB_APP_URL, {
                 method: 'POST',
@@ -222,8 +264,8 @@
                             </li>
                         `;
                     });
-                    
                     document.getElementById("myRankDisplay").innerText = data.myRank > 0 ? data.myRank : "-";
+                    if(swiper) swiper.updateAutoHeight();
                 }
             });
         }
@@ -238,12 +280,15 @@
                 if (data.status === "success") {
                     const list = document.getElementById("historyList");
                     list.innerHTML = ""; 
-                    if (data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; return; }
-                    data.data.forEach(item => {
-                        let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
-                        let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
-                        list.innerHTML += `<li class="history-item"><span>📦 ${item.orderId}</span><span class="${statusClass}">${statusText}</span></li>`;
-                    });
+                    if (data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; }
+                    else {
+                        data.data.forEach(item => {
+                            let statusClass = item.status === "Approved" ? "status-approved" : "status-pending";
+                            let statusText = item.status === "Approved" ? "อนุมัติแล้ว" : "รอตรวจสอบ";
+                            list.innerHTML += `<li class="history-item"><span>📦 ${item.orderId}</span><span class="${statusClass}">${statusText}</span></li>`;
+                        });
+                    }
+                    if(swiper) swiper.updateAutoHeight();
                 }
             });
         }
@@ -268,22 +313,28 @@
                         statusText.innerText = "ส่งสำเร็จ! รอตรวจสอบนะคะ";
                         orderInput.value = "";
                         fetchOrderHistory(profile.userId);
-                        document.getElementById("historyContent").style.display = "block";
-                        document.getElementById("toggleIconHist").innerText = "▲";
                     } else {
                         statusText.style.color = "red";
                         statusText.innerText = data.message; 
                     }
-                }).catch(() => { statusText.style.color = "red"; statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่"; });
+                    if(swiper) swiper.updateAutoHeight();
+                }).catch(() => { statusText.style.color = "red"; statusText.innerText = "เกิดข้อผิดพลาด กรุณาลองใหม่"; if(swiper) swiper.updateAutoHeight(); });
             } catch (err) { alert("ไม่พบข้อมูลผู้ใช้ กรุณาเข้าสู่ระบบใหม่"); }
         }
 
-        // รวมฟังก์ชันเปิดปิดการ์ดให้ใช้ได้กับหลายหน้าต่าง
+        // อัปเดตให้กดซ่อน/แสดงได้ลื่นไหลขึ้นพร้อมกับตัวสไลด์
         function toggleSection(contentId, iconId) {
             const content = document.getElementById(contentId);
             const icon = document.getElementById(iconId);
-            if (content.style.display === "none") { content.style.display = "block"; icon.innerText = "▲"; } 
-            else { content.style.display = "none"; icon.innerText = "▼"; }
+            if (content.style.display === "none") { 
+                content.style.display = "block"; 
+                icon.innerText = "▲"; 
+            } else { 
+                content.style.display = "none"; 
+                icon.innerText = "▼"; 
+            }
+            // แจ้งให้ตัวสไลด์รู้ว่ามีการปรับความสูงของเนื้อหา
+            if(swiper) setTimeout(() => swiper.updateAutoHeight(), 50);
         }
 
         function copyMemberId() {
