@@ -167,20 +167,24 @@
                     container.innerHTML = "<p style='color:gray;font-size:14px;margin-top:15px;'>ขณะนี้ยังไม่มีโปรโมชั่นใหม่ค่ะ</p>"; 
                     return; 
                 }
-                data.data.forEach(item => {
-                    container.innerHTML += `
-                        <div class="reward-item">
-                            <img class="reward-img" src="${item.img}" alt="Reward">
-                            <div class="reward-info">
-                                <span class="reward-tag">ใช้ ${item.points} แต้ม</span>
-                                <h4>${item.name}</h4>
-                                <p>${item.desc}</p>
-                                <p style="font-size:11px; color:#999; margin-top:8px;">หมดเขต: ${item.expiry}</p>
-                            </div>
-                        </div>`;
-                });
-                if(swiper) setTimeout(() => swiper.updateAutoHeight(), 200);
-            });
+/* --- แก้ไขส่วนการสร้าง HTML ในฟังก์ชัน fetchRewards --- */
+data.data.forEach(item => {
+    // ถ้ามีลิงก์ให้ใส่ <a> ครอบรูปภาพ ถ้าไม่มีให้โชว์รูปเฉยๆ
+    const imageHtml = item.link 
+        ? `<a href="${item.link}" target="_blank"><img class="reward-img" src="${item.img}" alt="Reward"></a>`
+        : `<img class="reward-img" src="${item.img}" alt="Reward">`;
+
+    container.innerHTML += `
+        <div class="reward-item">
+            ${imageHtml}
+            <div class="reward-info">
+                <span class="reward-tag">ใช้ ${item.points} แต้ม</span>
+                <h4>${item.name}</h4>
+                <p>${item.desc}</p>
+                <p style="font-size:11px; color:#999; margin-top:8px;">หมดเขต: ${item.expiry}</p>
+            </div>
+        </div>`;
+});
         }
 
         function updateUI(data) {
