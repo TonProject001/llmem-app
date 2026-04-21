@@ -11,7 +11,11 @@
         body { font-family: sans-serif; text-align: center; background-color: #fcfcfc; padding: 10px 0; margin: 0; overflow-x: hidden; }
         .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-bottom: 20px;}
         img.profile-img { border-radius: 50%; width: 120px; height: 120px; border: 3px solid #ffccba; }
-        input { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px;}
+        
+        /* ปรับ Input และ Select ให้หน้าตาเหมือนกัน */
+        input, select { padding: 12px; margin: 10px 0; width: 80%; border-radius: 8px; border: 1px solid #ddd; font-size: 16px; background-color: white;}
+        select { width: 85%; } /* ให้กว้างพอดีกับการ์ด */
+        
         button { padding: 12px; width: 85%; background-color: #00B900; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
         .history-list, .rank-list { list-style-type: none; padding: 0; text-align: left; margin-top: 15px; }
         .history-item, .rank-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; font-size: 14px;}
@@ -92,6 +96,12 @@
                 <div class="swiper-slide">
                     <div class="card">
                         <h3>แจ้งหมายเลขคำสั่งซื้อ</h3>
+                        <p style="font-size: 14px; color: gray;">เพื่อสะสมแต้ม</p>
+                        
+                        <select id="orderPlatform">
+                            <option value="">-- โหลดช่องทางสักครู่... --</option>
+                        </select>
+                        
                         <input type="text" id="orderId" placeholder="เช่น ORD-12345">
                         <button onclick="submitOrder()">ส่งตรวจสอบรับแต้ม</button>
                         <p id="statusMessage" style="font-size: 14px; margin-top: 10px;"></p>
@@ -139,7 +149,6 @@
         }
 
         function checkUserRegistration(profile) {
-            // เพิ่มการส่ง pictureUrl ไปหลังบ้าน
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "registerUser", lineUserId: profile.userId, pictureUrl: profile.pictureUrl }) })
             .then(res => res.json())
             .then(data => {
@@ -148,6 +157,14 @@
                 else {
                     document.getElementById("appContent").style.display = "block";
                     updateUI(data);
+                    
+                    // ใส่ข้อมูลช่องทางสั่งซื้อลงใน Dropdown
+                    const platformSelect = document.getElementById("orderPlatform");
+                    if (data.platforms && data.platforms.length > 0) {
+                        platformSelect.innerHTML = '<option value="">-- เลือกช่องทางที่สั่งซื้อ --</option>';
+                        data.platforms.forEach(p => { platformSelect.innerHTML += `<option value="${p}">${p}</option>`; });
+                    }
+                    
                     fetchOrderHistory(profile.userId);
                     fetchLeaderboard(profile.userId);
                     fetchRewards(); 
@@ -178,7 +195,6 @@
             if(!birthdate) { errorTxt.innerText = "กรุณาระบุวันเกิด"; return; }
             errorTxt.style.color = "orange"; errorTxt.innerText = "กำลังบันทึกข้อมูล...";
             const profile = await liff.getProfile();
-            // ส่ง pictureUrl ไปด้วยเวลาลงทะเบียนใหม่
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "saveProfile", lineUserId: profile.userId, displayName: profile.displayName, phone: phone, birthdate: birthdate, pictureUrl: profile.pictureUrl }) })
             .then(res => res.json()).then(data => {
                 if(data.status === "success") {
@@ -214,21 +230,39 @@
             fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "getOrderHistory", lineUserId: userId }) }).then(res => res.json()).then(data => {
                 const list = document.getElementById("historyList"); list.innerHTML = "";
                 if(data.data.length === 0) { list.innerHTML = "<li style='text-align:center;color:gray;font-size:14px;'>ยังไม่มีประวัติค่ะ</li>"; }
-                else { data.data.forEach(h => { list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`; }); }
+                else { 
+                    data.data.forEach(h => { 
+                        let ptf = h.platform ? `<br><small style="color:gray;">(${h.platform})</small>` : "";
+                        list.innerHTML += `<li class="history-item"><span>📦 ${h.orderId}${ptf}</span><span class="${h.status === 'Approved' ? 'status-approved':'status-pending'}">${h.status === 'Approved' ? 'อนุมัติแล้ว':'รอตรวจ'}</span></li>`; 
+                    }); 
+                }
+                if(swiper) swiper.updateAutoHeight();
             });
         }
 
         async function submitOrder() {
             const input = document.getElementById("orderId");
+            const platformSelect = document.getElementById("orderPlatform");
             const status = document.getElementById("statusMessage");
+            
             const orderId = input.value.trim().toUpperCase();
+            const platform = platformSelect.value;
+            
+            if(!platform) { alert("กรุณาเลือกช่องทางที่สั่งซื้อด้วยค่ะ"); return; }
             if(!orderId) { alert("กรุณาระบุหมายเลขคำสั่งซื้อ"); return; }
+            
             status.style.color = "orange"; status.innerText = "กำลังส่ง...";
             try {
                 const profile = await liff.getProfile();
-                fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId }) })
+                
+                // ส่งค่า Platform ไปด้วย
+                fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "submitOrder", lineUserId: profile.userId, orderId: orderId, platform: platform }) })
                 .then(res => res.json()).then(data => {
-                    if(data.status === "success") { status.style.color="green"; status.innerText = "ส่งสำเร็จ!"; input.value = ""; fetchOrderHistory(profile.userId); }
+                    if(data.status === "success") { 
+                        status.style.color="green"; status.innerText = "ส่งสำเร็จ!"; 
+                        input.value = ""; platformSelect.value = ""; 
+                        fetchOrderHistory(profile.userId); 
+                    }
                     else { status.style.color="red"; status.innerText = data.message; }
                     if(swiper) swiper.updateAutoHeight();
                 });
