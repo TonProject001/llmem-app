@@ -12,9 +12,10 @@
         input, select { padding: 8px; margin-right: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 14px;}
         button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 5px; color: white; font-size: 14px;}
         .btn-add { background: #28a745; }
-        .btn-special { background: #17a2b8; margin-top: 10px; margin-right: 5px;} /* ปุ่มเติมแต้มพิเศษสีฟ้า */
+        .btn-special { background: #17a2b8; margin-top: 10px; margin-right: 5px;} 
         .btn-del { background: #dc3545; margin-top: 10px; }
         .section { margin-top: 30px; padding-top: 20px; border-top: 2px dashed #ddd; }
+        .platform-badge { background: #eee; padding: 3px 8px; border-radius: 4px; font-size: 12px; color: #555; margin-left: 10px; }
     </style>
 </head>
 <body>
@@ -24,10 +25,8 @@
 
         <div class="section">
             <h2>จัดการแต้ม (รหัสสมาชิก)</h2>
-            
             <input type="text" id="targetSearch" list="userList" placeholder="🔍 ค้นหา LAOR-xxxx..." style="width: 250px;">
             <datalist id="userList"></datalist>
-
             <input type="number" id="manualAmount" placeholder="จำนวนแต้ม" style="width: 100px;">
             <br>
             <button class="btn-special" onclick="manualUpdate('Add')">➕ เพิ่มแต้มพิเศษ</button>
@@ -48,8 +47,9 @@
                 res.data.forEach(item => {
                     const div = document.createElement("div");
                     div.className = "order-item";
+                    // แสดงช่องทางที่ลูกค้าเลือกไว้ให้แอดมินดู
                     div.innerHTML = `
-                        <p><strong>ออร์เดอร์:</strong> ${item.orderId}</p>
+                        <p><strong>ออร์เดอร์:</strong> ${item.orderId} <span class="platform-badge">${item.platform}</span></p>
                         <input type="number" id="pts-${item.row}" placeholder="แต้ม">
                         <button class="btn-add" onclick="approveOrder('${item.userId}', ${item.row})">อนุมัติแต้ม</button>
                     `;
@@ -64,7 +64,6 @@
             .then(res => {
                 const datalist = document.getElementById("userList");
                 datalist.innerHTML = ''; 
-                
                 res.data.forEach(user => {
                     const option = document.createElement("option");
                     const memId = user.memberId || "ยังไม่มีรหัส";
@@ -77,54 +76,26 @@
         function approveOrder(userId, row) {
             const pts = document.getElementById(`pts-${row}`).value;
             if(!pts) return alert("ระบุแต้มด้วยครับ");
-            
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: pts, type: "Approve", orderRow: row, note: "อนุมัติจากออร์เดอร์" })
-            }).then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); loadUsers(); }); 
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: pts, type: "Approve", orderRow: row, note: "อนุมัติจากออร์เดอร์" }) })
+            .then(() => { alert("อนุมัติสำเร็จ!"); loadOrders(); loadUsers(); }); 
         }
 
-        // ฟังก์ชันใหม่ที่แยกการทำงานระหว่าง "เพิ่มแต้ม" และ "ตัดแต้ม"
         function manualUpdate(actionType) {
             const searchInput = document.getElementById("targetSearch").value;
             const amountInput = document.getElementById("manualAmount").value;
-
             if(!searchInput || !amountInput) return alert("กรุณาพิมพ์ค้นหาลูกค้าและใส่จำนวนแต้มครับ");
-
             const parts = searchInput.split("| ID: ");
             if (parts.length < 2) return alert("กรุณาเลือกลูกค้าจากรายชื่อที่ระบบแนะนำเท่านั้นครับ");
             const userId = parts[1].trim();
 
-            let finalAmount = 0;
-            let backendType = "";
-            let noteStr = "";
+            let finalAmount = 0; let backendType = ""; let noteStr = "";
+            if (actionType === 'Add') { finalAmount = Math.abs(amountInput); backendType = "Approve"; noteStr = "แอดมินเพิ่มแต้มพิเศษ"; } 
+            else { finalAmount = -Math.abs(amountInput); backendType = "Deduct"; noteStr = "แอดมินตัดแต้มด้วยตนเอง"; }
 
-            // แยกโลจิกการคำนวณแต้ม
-            if (actionType === 'Add') {
-                finalAmount = Math.abs(amountInput); // บังคับเป็นค่าบวก
-                backendType = "Approve"; // ใช้สถานะ Approve เพื่อให้แต้มมีอายุ 1 ปีอัตโนมัติ
-                noteStr = "แอดมินเพิ่มแต้มพิเศษ";
-            } else {
-                finalAmount = -Math.abs(amountInput); // บังคับเป็นค่าลบ
-                backendType = "Deduct";
-                noteStr = "แอดมินตัดแต้มด้วยตนเอง";
-            }
-
-            // ส่งข้อมูลไปหลังบ้าน
-            fetch(WEB_APP_URL, {
-                method: 'POST',
-                body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: finalAmount, type: backendType, note: noteStr })
-            }).then(res => res.json())
-            .then(data => { 
-                if(data.status === "error") { 
-                    alert("ข้อผิดพลาด: " + data.message); 
-                } else {
-                    alert("ดำเนินการสำเร็จ!"); 
-                    // ล้างช่องกรอกเพื่อพร้อมทำงานเคสต่อไป
-                    document.getElementById("targetSearch").value = "";
-                    document.getElementById("manualAmount").value = "";
-                    loadUsers(); // โหลดรายชื่อใหม่เพื่ออัปเดตแต้มโชว์แอดมิน
-                }
+            fetch(WEB_APP_URL, { method: 'POST', body: JSON.stringify({ action: "updatePoints", lineUserId: userId, amount: finalAmount, type: backendType, note: noteStr }) })
+            .then(res => res.json()).then(data => { 
+                if(data.status === "error") { alert("ข้อผิดพลาด: " + data.message); } 
+                else { alert("ดำเนินการสำเร็จ!"); document.getElementById("targetSearch").value = ""; document.getElementById("manualAmount").value = ""; loadUsers(); }
             });
         }
 
